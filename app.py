@@ -1,76 +1,90 @@
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, session, send_file
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import openai
-import os
+import openai, os, io
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
 
 app = Flask(__name__)
+app.secret_key = "ultimate-chatgpt-style-secret"
 
-# basic safety
-limiter = Limiter(
-    get_remote_address,
-    app=app,
-    default_limits=["10 per minute"]
-)
-
+limiter = Limiter(get_remote_address, app=app, default_limits=["10 per minute"])
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
+# ---------- SUBJECT DETECTION ----------
+def detect_subject(q):
+    q = q.lower()
+    if any(w in q for w in ["equation","formula","math","x²","root"]): return "Maths 🧮"
+    if any(w in q for w in ["science","physics","chemistry","photosynthesis"]): return "Science 🔬"
+    if any(w in q for w in ["history","freedom","mughal","rajya"]): return "History 🏛️"
+    if any(w in q for w in ["capital","currency","gk","president"]): return "GK 🌍"
+    return "General 📘"
 
-def build_prompt(question):
+# ---------- PROMPT ----------
+def build_prompt(q, prev):
+    follow = f"\nPrevious question: {prev}\nUse context.\n" if prev else ""
     return f"""
-You are a helpful AI tutor like ChatGPT.
+You are a ChatGPT-like AI tutor.
+
+Subject: {detect_subject(q)}
 
 Rules:
-- Language: Simple Hindi + Hinglish
-- Style: Clear, structured, student-friendly
-- No mixing of points
-- Use emojis only for clarity (not overuse)
-- Focus on exam + understanding
+- Hindi + Hinglish
+- Exam + understanding
+- Very clear, structured
+- Emojis for clarity only
 
-STRICT FORMAT:
+FORMAT:
 
 🧠 Topic
-
-📌 Short Answer (Exam ke liye)
-(3–5 crisp points)
-
-📖 Easy Explanation (Samajhne ke liye)
-(simple language, small paragraphs)
-
-🧮 Example / Formula (if applicable)
-(step-wise)
-
+📌 Short Answer
+📖 Easy Explanation
+🧮 Example / Formula
 ⚠️ Yaad Rakhne Layak
-(1–2 very important lines)
-
 🎯 Exam Tip
-(what examiner expects)
 
-Question:
-{question}
+{follow}
+Question: {q}
 """
 
-
-@app.route("/", methods=["GET", "POST"])
+# ---------- MAIN ----------
+@app.route("/", methods=["GET","POST"])
 @limiter.limit("5 per minute")
 def index():
     answer = ""
     if request.method == "POST":
-        question = request.form.get("question")
+        q = request.form["question"]
+        prev = session.get("last_q")
 
-        response = openai.ChatCompletion.create(
+        res = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
-            messages=[
-                {"role": "user", "content": build_prompt(question)}
-            ],
+            messages=[{"role":"user","content":build_prompt(q,prev)}],
             temperature=0.3,
-            max_tokens=500
+            max_tokens=650
         )
 
-        answer = response.choices[0].message.content
+        answer = res.choices[0].message.content
+        session["last_q"] = q
+        session["last_answer"] = answer
 
     return render_template("index.html", answer=answer)
 
+# ---------- PDF DOWNLOAD ----------
+@app.route("/download")
+def download():
+    text = session.get("last_answer","")
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    y = 800
+    for line in text.split("\n"):
+        c.drawString(40, y, line[:100])
+        y -= 15
+        if y < 50:
+            c.showPage()
+            y = 800
+    c.save()
+    buffer.seek(0)
+    return send_file(buffer, as_attachment=True, download_name="AI_Notes.pdf")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)

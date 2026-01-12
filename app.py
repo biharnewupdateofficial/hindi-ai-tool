@@ -1,86 +1,81 @@
 from flask import Flask, render_template, request
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+import openai
 import os
-from openai import OpenAI
-from dotenv import load_dotenv
-
-load_dotenv()
 
 app = Flask(__name__)
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def clean_format(text):
-    """
-    Answer ko proper notes format me todta hai
-    """
-    html = ""
-    lines = text.split("\n")
+# Rate limiting (basic protection)
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["10 per minute"]
+)
 
-    for line in lines:
-        line = line.strip()
+# OpenAI API Key (Render env variable)
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-        if line.startswith("INTRODUCTION:"):
-            html += "<h3>📘 Introduction</h3>"
-        elif line.startswith("DEFINITION:"):
-            html += "<h3>📗 Definition</h3>"
-        elif line.startswith("POINTS:"):
-            html += "<h3>📌 Important Points</h3><ul>"
-        elif line.startswith("EXAMPLE:"):
-            html += "</ul><h3>🧮 Examples</h3><ul>"
-        elif line.startswith("SUMMARY:"):
-            html += "</ul><h3>📝 Exam Summary</h3><ul>"
-        elif line.startswith("-"):
-            html += f"<li>{line[1:].strip()}</li>"
-        elif line == "":
-            continue
-        else:
-            html += f"<p>{line}</p>"
+def format_prompt(question):
+    return f"""
+You are an expert Indian school teacher (Class 6–12).
 
-    html += "</ul>"
-    return html
+Rules:
+- Language: Simple Hindi + Hinglish
+- Style: Exam-oriented, clean, structured
+- Use topic-based emojis automatically
+- Clear separation: important vs extra
 
-@app.route("/", methods=["GET", "POST"])
-def index():
-    answer = ""
-    if request.method == "POST":
-        question = request.form["question"]
+Emoji mapping:
+Maths → 🧮 ➕ ➗ 📐
+Science → 🔬 ⚡ 🌱 🧪
+History → 🏛️ 📜 🗺️
+Geography → 🌍 🧭 ⛰️
+Civics → 🏛️ ⚖️
+Economics → 💰 📊
+Computer → 💻 🤖
 
-        prompt = f"""
-Tum ek experienced Indian school teacher ho.
-Jawab sirf NOTES format me do.
-Extra baat nahi, sirf padhne layak points.
+STRICT FORMAT ONLY:
 
-STRICT FORMAT FOLLOW KARO (mandatory):
+📌 Topic Overview
+(short intro – 2 lines)
 
-INTRODUCTION:
-- sirf 2–3 short lines
+📘 Definition
+(clear & exam-ready)
 
-DEFINITION:
-- ekdum exam language me
+🧮 Important Formula / Key Points
+(if applicable)
 
-POINTS:
-- sirf yaad karne wale points
-- numbering / bullets me
+✍️ Step-by-Step Explanation
+(numbered points only)
 
-EXAMPLE:
-- 1 ya 2 example max
+📝 Solved Example / Illustration
+(simple, clean)
 
-SUMMARY:
-- exam ke liye kya yaad rakhe
+📌 Exam Tips ⭐
+(2–3 must-remember points)
 
 Question:
 {question}
 """
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3
+@app.route("/", methods=["GET", "POST"])
+@limiter.limit("5 per minute")
+def index():
+    answer = ""
+    if request.method == "POST":
+        question = request.form.get("question")
+
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
+            messages=[
+                {"role": "user", "content": format_prompt(question)}
+            ]
         )
 
-        raw = response.choices[0].message.content
-        answer = clean_format(raw)
+        answer = response.choices[0].message.content
 
     return render_template("index.html", answer=answer)
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host="0.0.0.0", port=10000)

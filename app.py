@@ -1,38 +1,45 @@
 from flask import Flask, render_template, request
-from openai import OpenAI
 import os
+from openai import OpenAI
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
 
-# 🔐 OpenAI Client (API key system se lega)
-client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY")
+# Rate limit (Free plan safe)
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=["10 per hour"]
 )
 
-SYSTEM_PROMPT = """
-Tum ek madadgar Hindi + Hinglish AI assistant ho.
-Rules:
-- Simple Hindi ya Hinglish me jawab do
-- Step-by-step samjhao
-- Aise likho jaise bhai/dost samjha raha ho
-- Jawab clear, practical aur short ho
-"""
+# OpenAI client
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.route("/", methods=["GET", "POST"])
+@limiter.limit("10/hour")
 def index():
-    answer = ""
-    question = ""
+    answer = None
 
     if request.method == "POST":
         question = request.form.get("question")
 
         if question:
-            response = client.responses.create(
-                model="gpt-5-nano",
-                input=[
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
                     {
                         "role": "system",
-                        "content": SYSTEM_PROMPT
+                        "content": (
+                            "You are a helpful teacher who explains concepts in Hindi + Hinglish.\n"
+                            "Always structure answers like this:\n"
+                            "1. Short introduction\n"
+                            "2. Definition\n"
+                            "3. Step-by-step explanation\n"
+                            "4. Examples\n"
+                            "5. Quick summary\n\n"
+                            "Use bullet points, headings, and simple language for students."
+                        )
                     },
                     {
                         "role": "user",
@@ -41,9 +48,9 @@ def index():
                 ]
             )
 
-            answer = response.output_text
+            answer = response.choices[0].message.content
 
-    return render_template("index.html", answer=answer, question=question)
+    return render_template("index.html", answer=answer)
 
 if __name__ == "__main__":
     app.run(debug=True)

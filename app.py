@@ -8,30 +8,35 @@ load_dotenv()
 app = Flask(__name__)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-def format_answer(text):
+def clean_format(text):
     """
-    AI ke jawab ko clean, readable format me convert karta hai
+    Answer ko proper notes format me todta hai
     """
+    html = ""
     lines = text.split("\n")
-    formatted = []
 
     for line in lines:
         line = line.strip()
 
-        if line.startswith("###"):
-            formatted.append(f"<h3>{line.replace('###','').strip()}</h3>")
-        elif line.startswith("##"):
-            formatted.append(f"<h2>{line.replace('##','').strip()}</h2>")
-        elif line.startswith("#"):
-            formatted.append(f"<h1>{line.replace('#','').strip()}</h1>")
+        if line.startswith("INTRODUCTION:"):
+            html += "<h3>📘 Introduction</h3>"
+        elif line.startswith("DEFINITION:"):
+            html += "<h3>📗 Definition</h3>"
+        elif line.startswith("POINTS:"):
+            html += "<h3>📌 Important Points</h3><ul>"
+        elif line.startswith("EXAMPLE:"):
+            html += "</ul><h3>🧮 Examples</h3><ul>"
+        elif line.startswith("SUMMARY:"):
+            html += "</ul><h3>📝 Exam Summary</h3><ul>"
         elif line.startswith("-"):
-            formatted.append(f"<li>{line[1:].strip()}</li>")
+            html += f"<li>{line[1:].strip()}</li>"
         elif line == "":
-            formatted.append("<br>")
+            continue
         else:
-            formatted.append(f"<p>{line}</p>")
+            html += f"<p>{line}</p>"
 
-    return "".join(formatted)
+    html += "</ul>"
+    return html
 
 @app.route("/", methods=["GET", "POST"])
 def index():
@@ -40,29 +45,40 @@ def index():
         question = request.form["question"]
 
         prompt = f"""
-Tum ek Indian school teacher ho.
-Jawab Hindi + Hinglish me do.
-Simple language, exam-oriented, clean structure ke sath samjhao.
+Tum ek experienced Indian school teacher ho.
+Jawab sirf NOTES format me do.
+Extra baat nahi, sirf padhne layak points.
+
+STRICT FORMAT FOLLOW KARO (mandatory):
+
+INTRODUCTION:
+- sirf 2–3 short lines
+
+DEFINITION:
+- ekdum exam language me
+
+POINTS:
+- sirf yaad karne wale points
+- numbering / bullets me
+
+EXAMPLE:
+- 1 ya 2 example max
+
+SUMMARY:
+- exam ke liye kya yaad rakhe
 
 Question:
 {question}
-
-Format:
-- Short introduction
-- Clear definition
-- Step-by-step explanation
-- Example
-- Quick summary
 """
 
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.4
+            temperature=0.3
         )
 
-        raw_answer = response.choices[0].message.content
-        answer = format_answer(raw_answer)
+        raw = response.choices[0].message.content
+        answer = clean_format(raw)
 
     return render_template("index.html", answer=answer)
 

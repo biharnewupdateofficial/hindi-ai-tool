@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>AI Tutor</title>
-  <link rel="stylesheet" href="/static/style.css">
+    <title>AI Tutor (Exam Mode)</title>
 </head>
 <body>
 
-<div class="card">
-  <a href="/logout">🚪 Logout</a>
-  <h2>🤖 Hindi + Hinglish AI Tutor</h2>
+<a href="/logout">Logout</a>
 
-  <form method="POST">
-    <textarea name="question" placeholder="✍️ Apna sawal likho..." required></textarea>
-    <button>🧠 Jawab Pao</button>
-  </form>
+<h2>✍️ Apna sawal likho</h2>
 
-  {% if answer %}
-  <div class="answer">{{ answer }}</div>
-  {% endif %}
-</div>
+<form method="POST">
+    <textarea name="question" rows="6" cols="60" placeholder="jaise: Class 10 ka quadratic equation samjhao" required></textarea><br><br>
+    <button type="submit">📘 Jawab Pao</button>
+</form>
+
+{% if answer %}
+<hr>
+<h3>📘 AI ka Jawab:</h3>
+<pre style="white-space: pre-wrap;">{{ answer }}</pre>
+{% endif %}
 
 </body>
 </html>

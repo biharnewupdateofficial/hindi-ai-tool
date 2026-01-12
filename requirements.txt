@@ -1,7 +1,4 @@
 flask
-gunicorn
 openai
 python-dotenv
-flask-limiter
-reportlab
-werkzeug
+gunicorn

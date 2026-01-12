@@ -1,62 +1,35 @@
 from flask import Flask, render_template, request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-import openai
 import os
 
 app = Flask(__name__)
 
-# Rate limiting (basic protection)
+# Rate limit (safe)
 limiter = Limiter(
     get_remote_address,
     app=app,
     default_limits=["10 per minute"]
 )
 
-# OpenAI API Key (Render env variable)
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
-def format_prompt(question):
+def format_answer(topic, raw):
     return f"""
-You are an expert Indian school teacher (Class 6–12).
+🧠 {topic}
 
-Rules:
-- Language: Simple Hindi + Hinglish
-- Style: Exam-oriented, clean, structured
-- Use topic-based emojis automatically
-- Clear separation: important vs extra
+📌 Short Answer (Exam ke liye)
+{raw['short']}
 
-Emoji mapping:
-Maths → 🧮 ➕ ➗ 📐
-Science → 🔬 ⚡ 🌱 🧪
-History → 🏛️ 📜 🗺️
-Geography → 🌍 🧭 ⛰️
-Civics → 🏛️ ⚖️
-Economics → 💰 📊
-Computer → 💻 🤖
+📖 Easy Explanation (Samajhne ke liye)
+{raw['explain']}
 
-STRICT FORMAT ONLY:
+🧮 Example / Formula
+{raw['example']}
 
-📌 Topic Overview
-(short intro – 2 lines)
+⚠️ Yaad Rakhne Layak Baat
+{raw['note']}
 
-📘 Definition
-(clear & exam-ready)
-
-🧮 Important Formula / Key Points
-(if applicable)
-
-✍️ Step-by-Step Explanation
-(numbered points only)
-
-📝 Solved Example / Illustration
-(simple, clean)
-
-📌 Exam Tips ⭐
-(2–3 must-remember points)
-
-Question:
-{question}
+🎯 Exam Tip
+{raw['tip']}
 """
 
 @app.route("/", methods=["GET", "POST"])
@@ -64,16 +37,25 @@ Question:
 def index():
     answer = ""
     if request.method == "POST":
-        question = request.form.get("question")
+        topic = request.form.get("question")
 
-        response = openai.ChatCompletion.create(
-            model="gpt-3.5-turbo",
-            messages=[
-                {"role": "user", "content": format_prompt(question)}
-            ]
-        )
+        # --- DEMO AI LOGIC (ChatGPT style) ---
+        raw = {
+            "short": "Quadratic equation ek polynomial equation hoti hai jisme degree 2 hoti hai.",
+            "explain": (
+                "Quadratic equation ka general form hota hai: ax² + bx + c = 0, "
+                "jahan a ≠ 0. Iska use maths, physics aur daily problems me hota hai."
+            ),
+            "example": (
+                "Example: 2x² + 3x − 5 = 0\n"
+                "Discriminant D = b² − 4ac = 9 + 40 = 49\n"
+                "Roots = (−b ± √49) / 2a"
+            ),
+            "note": "Discriminant se roots ki nature pata chalti hai.",
+            "tip": "Board exam me formula likhna + steps dikhana bahut zaroori hai."
+        }
 
-        answer = response.choices[0].message.content
+        answer = format_answer(topic, raw)
 
     return render_template("index.html", answer=answer)
 

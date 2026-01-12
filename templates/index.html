@@ -2,16 +2,18 @@
 <html lang="hi">
 <head>
 <meta charset="UTF-8">
-<title>Hindi + Hinglish AI Doubt Solver</title>
+<title>Hindi + Hinglish AI Tutor</title>
 <style>
 body {
     font-family: system-ui, -apple-system, BlinkMacSystemFont;
-    background: #eef3f8;
+    background: #f3f6fb;
+    margin: 0;
+    padding: 0;
 }
 .container {
-    max-width: 800px;
-    margin: 60px auto;
-    background: #fff;
+    max-width: 900px;
+    margin: 50px auto;
+    background: #ffffff;
     padding: 30px;
     border-radius: 12px;
 }
@@ -23,7 +25,7 @@ textarea {
 }
 button {
     margin-top: 10px;
-    padding: 10px 20px;
+    padding: 10px 22px;
     font-size: 16px;
     background: #2563eb;
     color: #fff;
@@ -32,39 +34,40 @@ button {
     cursor: pointer;
 }
 .answer {
-    margin-top: 25px;
-    padding: 20px;
+    margin-top: 30px;
+    padding: 25px;
     background: #f1f5f9;
     border-left: 5px solid #2563eb;
     white-space: pre-line;
+    line-height: 1.7;
 }
 footer {
     text-align: center;
-    margin-top: 20px;
+    margin-top: 25px;
     color: #555;
+    font-size: 14px;
 }
 </style>
 </head>
 <body>
 
 <div class="container">
-    <h2>🤖 Hindi + Hinglish AI Doubt Solver</h2>
+    <h2>🤖 Hindi + Hinglish AI Tutor</h2>
 
     <form method="POST">
-        <textarea name="question" placeholder="Apna sawal yahan likho..."></textarea>
+        <textarea name="question" placeholder="Apna sawal yahan likho (exam / doubt / concept)..." required></textarea>
         <br>
         <button type="submit">Jawab Pao</button>
     </form>
 
     {% if answer %}
     <div class="answer">
-        <strong>AI ka Jawab:</strong><br><br>
         {{ answer }}
     </div>
     {% endif %}
 
     <footer>
-        © 2026 • Powered by AI • BiharNewUpdate • By Intiyaz
+        © 2026 • Powered by AI • BiharNewUpdate • By • Intiyaz
     </footer>
 </div>
 

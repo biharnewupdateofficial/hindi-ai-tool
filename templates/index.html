@@ -1,123 +1,65 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Hindi AI – Pucho aur Samjho</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
+    <title>Hindi + Hinglish AI Doubt Solver</title>
     <style>
         body {
-            margin: 0;
-            padding: 0;
-            font-family: "Segoe UI", Arial, sans-serif;
-            background: linear-gradient(135deg, #e3f2fd, #f9f9f9);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            font-family: Arial, sans-serif;
+            background: #eef5ff;
         }
-
-        .card {
-            width: 95%;
-            max-width: 750px;
-            background: #ffffff;
-            border-radius: 14px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+        .box {
+            width: 70%;
+            margin: 50px auto;
+            background: white;
             padding: 30px;
+            border-radius: 10px;
         }
-
-        .title {
-            text-align: center;
-            font-size: 28px;
-            font-weight: 600;
-            margin-bottom: 20px;
-        }
-
-        .title span {
-            font-size: 32px;
-            margin-right: 8px;
-        }
-
         textarea {
             width: 100%;
-            min-height: 120px;
-            resize: vertical;
-            padding: 14px;
+            height: 120px;
             font-size: 16px;
-            border-radius: 8px;
-            border: 1px solid #ccc;
-            outline: none;
+            padding: 10px;
         }
-
-        textarea:focus {
-            border-color: #1976d2;
-        }
-
-        .btn {
+        button {
             margin-top: 15px;
-            padding: 12px 28px;
-            font-size: 16px;
-            background: #1976d2;
-            color: #fff;
+            padding: 10px 20px;
+            background: #2563eb;
+            color: white;
             border: none;
-            border-radius: 8px;
-            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
         }
-
-        .btn:hover {
-            background: #125ea8;
+        .answer {
+            margin-top: 30px;
+            background: #f0f7ff;
+            padding: 20px;
+            border-left: 5px solid #2563eb;
         }
-
-        .answer-box {
-            margin-top: 25px;
-            background: #f1f8ff;
-            border-left: 5px solid #1976d2;
-            padding: 18px;
-            border-radius: 8px;
+        h1, h2, h3 {
+            color: #1e3a8a;
         }
-
-        .answer-box h3 {
-            margin-top: 0;
-            margin-bottom: 10px;
-        }
-
-        footer {
-            margin-top: 25px;
-            text-align: center;
-            font-size: 13px;
-            color: #666;
-        }
-
-        @media (max-width: 600px) {
-            .title {
-                font-size: 22px;
-            }
+        li {
+            margin-left: 20px;
         }
     </style>
 </head>
 <body>
 
-<div class="card">
-    <div class="title">
-        <span>🤖</span> Hindi + Hinglish AI Doubt Solver
-    </div>
+<div class="box">
+    <h2>🤖 Hindi + Hinglish AI Doubt Solver</h2>
 
-    <form method="post">
-        <textarea name="question" placeholder="Apna sawal yahan likho...">{{ question }}</textarea>
-        <br>
-        <button class="btn" type="submit">Jawab Pao</button>
+    <form method="POST">
+        <textarea name="question" placeholder="Apna sawal yahan likho..."></textarea><br>
+        <button type="submit">Jawab Pao</button>
     </form>
 
     {% if answer %}
-    <div class="answer-box">
-        <h3>AI ka Jawab:</h3>
-        <p>{{ answer }}</p>
+    <div class="answer">
+        <h2>AI ka Jawab:</h2>
+        {{ answer | safe }}
     </div>
     {% endif %}
-
-    <footer>
-        © 2026 • Powered by AI • BiharNewUpdate • By Intiyaz•
-    </footer>
 </div>
 
 </body>

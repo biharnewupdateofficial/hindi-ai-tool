@@ -1,54 +1,68 @@
 from flask import Flask, render_template, request
 import os
 from openai import OpenAI
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
-
-# Rate limit (Free plan safe)
-limiter = Limiter(
-    get_remote_address,
-    app=app,
-    default_limits=["10 per hour"]
-)
-
-# OpenAI client
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
+def format_answer(text):
+    """
+    AI ke jawab ko clean, readable format me convert karta hai
+    """
+    lines = text.split("\n")
+    formatted = []
+
+    for line in lines:
+        line = line.strip()
+
+        if line.startswith("###"):
+            formatted.append(f"<h3>{line.replace('###','').strip()}</h3>")
+        elif line.startswith("##"):
+            formatted.append(f"<h2>{line.replace('##','').strip()}</h2>")
+        elif line.startswith("#"):
+            formatted.append(f"<h1>{line.replace('#','').strip()}</h1>")
+        elif line.startswith("-"):
+            formatted.append(f"<li>{line[1:].strip()}</li>")
+        elif line == "":
+            formatted.append("<br>")
+        else:
+            formatted.append(f"<p>{line}</p>")
+
+    return "".join(formatted)
+
 @app.route("/", methods=["GET", "POST"])
-@limiter.limit("10/hour")
 def index():
-    answer = None
-
+    answer = ""
     if request.method == "POST":
-        question = request.form.get("question")
+        question = request.form["question"]
 
-        if question:
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": (
-                            "You are a helpful teacher who explains concepts in Hindi + Hinglish.\n"
-                            "Always structure answers like this:\n"
-                            "1. Short introduction\n"
-                            "2. Definition\n"
-                            "3. Step-by-step explanation\n"
-                            "4. Examples\n"
-                            "5. Quick summary\n\n"
-                            "Use bullet points, headings, and simple language for students."
-                        )
-                    },
-                    {
-                        "role": "user",
-                        "content": question
-                    }
-                ]
-            )
+        prompt = f"""
+Tum ek Indian school teacher ho.
+Jawab Hindi + Hinglish me do.
+Simple language, exam-oriented, clean structure ke sath samjhao.
 
-            answer = response.choices[0].message.content
+Question:
+{question}
+
+Format:
+- Short introduction
+- Clear definition
+- Step-by-step explanation
+- Example
+- Quick summary
+"""
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}],
+            temperature=0.4
+        )
+
+        raw_answer = response.choices[0].message.content
+        answer = format_answer(raw_answer)
 
     return render_template("index.html", answer=answer)
 

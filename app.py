@@ -1,46 +1,14 @@
-from flask import Flask, render_template, request, redirect, session
+from flask import Flask, render_template, request, redirect, session, url_for
+from openai import OpenAI
 import os
-import openai
-from dotenv import load_dotenv
-
-load_dotenv()
 
 app = Flask(__name__)
-app.secret_key = "exam-secret-key"
+app.secret_key = "supersecretkey"
 
-openai.api_key = os.getenv("OPENAI_API_KEY")
-
-@app.route("/", methods=["GET", "POST"])
-def index():
-    if "user" not in session:
-        return redirect("/login")
-
-    answer = None
-
-    if request.method == "POST":
-        question = request.form.get("question")
-
-        if question:
-            try:
-                response = openai.ChatCompletion.create(
-                    model="gpt-3.5-turbo",
-                    messages=[
-                        {
-                            "role": "system",
-                            "content": "You are an exam-focused Hindi + Hinglish AI tutor. Answer in clear headings, bullet points, emojis only in headings, exam-friendly language."
-                        },
-                        {"role": "user", "content": question}
-                    ],
-                    temperature=0.4,
-                    max_tokens=500
-                )
-
-                answer = response.choices[0].message.content
-
-            except Exception as e:
-                answer = f"⚠️ Error: {str(e)}"
-
-    return render_template("index.html", answer=answer)
+# OpenAI client (NEW API)
+client = OpenAI(
+    api_key=os.getenv("OPENAI_API_KEY")
+)
 
 @app.route("/login", methods=["GET", "POST"])
 def login():
@@ -53,8 +21,41 @@ def login():
 
 @app.route("/logout")
 def logout():
-    session.clear()
+    session.pop("user", None)
     return redirect("/login")
+
+@app.route("/", methods=["GET", "POST"])
+def index():
+    if "user" not in session:
+        return redirect("/login")
+
+    answer = None
+    error = None
+
+    if request.method == "POST":
+        question = request.form.get("question")
+
+        try:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": (
+                            "You are OpenTutor AI, an exam-focused tutor. "
+                            "Explain answers clearly with headings, bullet points, "
+                            "examples and emojis where helpful."
+                        )
+                    },
+                    {"role": "user", "content": question}
+                ]
+            )
+            answer = response.choices[0].message.content
+
+        except Exception as e:
+            error = str(e)
+
+    return render_template("index.html", answer=answer, error=error)
 
 if __name__ == "__main__":
     app.run(debug=True)

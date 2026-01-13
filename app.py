@@ -1,9 +1,9 @@
 import os
-from flask import Flask, render_template, request, redirect, session, url_for
+from flask import Flask, render_template, request, redirect, session
 from openai import OpenAI
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"
+app.secret_key = "opentutor-secret-key"
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -27,21 +27,29 @@ def index():
         return redirect("/login")
 
     answer = None
-
     if request.method == "POST":
         question = request.form.get("question")
 
-        try:
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {"role": "system", "content": "You are a helpful AI tutor. Explain clearly with emojis."},
-                    {"role": "user", "content": question}
-                ]
-            )
-            answer = response.choices[0].message.content
-        except Exception as e:
-            answer = f"❌ Error: {str(e)}"
+        prompt = f"""
+Tum ek exam-focused teacher ho.
+Answer simple Hindi me do.
+Board exam ke liye suitable ho.
+Headings, points, examples use karo.
+Maths formula simple text me likho.
+Emojis topic ke hisaab se use karo.
+
+Question:
+{question}
+"""
+
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "user", "content": prompt}
+            ]
+        )
+
+        answer = response.choices[0].message.content
 
     return render_template("index.html", answer=answer)
 

@@ -1,24 +1,172 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>AI Tutor (Exam Mode)</title>
+    <meta charset="UTF-8">
+    <title>OpenTutor AI</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Roboto, Arial, sans-serif;
+            background: #f5f7fb;
+        }
+
+        /* Header */
+        .header {
+            background: #2563eb;
+            color: white;
+            padding: 14px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header h1 {
+            font-size: 18px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logout {
+            background: #1e40af;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            text-decoration: none;
+            font-size: 14px;
+        }
+
+        /* Main container */
+        .container {
+            max-width: 850px;
+            margin: 30px auto;
+            padding: 0 15px;
+        }
+
+        /* Chat box */
+        .chat-box {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.08);
+        }
+
+        .chat-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 15px;
+        }
+
+        .message {
+            margin-bottom: 15px;
+        }
+
+        .user {
+            text-align: right;
+        }
+
+        .user .bubble {
+            background: #2563eb;
+            color: white;
+            display: inline-block;
+            padding: 10px 14px;
+            border-radius: 14px 14px 0 14px;
+            max-width: 80%;
+        }
+
+        .ai .bubble {
+            background: #f1f5f9;
+            color: #111827;
+            display: inline-block;
+            padding: 12px 14px;
+            border-radius: 14px 14px 14px 0;
+            max-width: 80%;
+            line-height: 1.6;
+        }
+
+        /* Form */
+        form {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        textarea {
+            flex: 1;
+            resize: none;
+            padding: 12px;
+            border-radius: 8px;
+            border: 1px solid #cbd5e1;
+            font-size: 14px;
+        }
+
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 0 18px;
+            border-radius: 8px;
+            font-size: 15px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #1d4ed8;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 25px;
+            font-size: 13px;
+            color: #6b7280;
+        }
+    </style>
 </head>
 <body>
 
-<a href="/logout">Logout</a>
+    <!-- Header -->
+    <div class="header">
+        <h1>🤖 OpenTutor AI</h1>
+        <a href="/logout" class="logout">Logout</a>
+    </div>
 
-<h2>✍️ Apna sawal likho</h2>
+    <!-- Main -->
+    <div class="container">
+        <div class="chat-box">
+            <div class="chat-title">💬 Ask anything, in any language</div>
 
-<form method="POST">
-    <textarea name="question" rows="6" cols="60" placeholder="jaise: Class 10 ka quadratic equation samjhao" required></textarea><br><br>
-    <button type="submit">📘 Jawab Pao</button>
-</form>
+            {% if question %}
+            <div class="message user">
+                <div class="bubble">
+                    {{ question }}
+                </div>
+            </div>
+            {% endif %}
 
-{% if answer %}
-<hr>
-<h3>📘 AI ka Jawab:</h3>
-<pre style="white-space: pre-wrap;">{{ answer }}</pre>
-{% endif %}
+            {% if answer %}
+            <div class="message ai">
+                <div class="bubble">
+                    {{ answer | safe }}
+                </div>
+            </div>
+            {% endif %}
+
+            <form method="POST">
+                <textarea name="question" rows="3" placeholder="✍️ Apna sawal yahan likho..." required></textarea>
+                <button type="submit">🚀 Send</button>
+            </form>
+        </div>
+
+        <div class="footer">
+            © 2026 • Powered by OpenTutor AI • Built by Intiyaz
+        </div>
+    </div>
 
 </body>
 </html>

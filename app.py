@@ -1,28 +1,18 @@
 import os
 from flask import Flask, render_template, request, redirect, session, url_for
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
 from openai import OpenAI
 
-# ---------------- CONFIG ----------------
 app = Flask(__name__)
-app.secret_key = "super-secret-key-change-later"
-
-limiter = Limiter(
-    get_remote_address,
-    app=app,
-    default_limits=["20 per minute"]
-)
+app.secret_key = "opentutor-secret-key"
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# ---------------- LOGIN ----------------
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        name = request.form.get("name")
-        if name:
-            session["user"] = name
+        username = request.form.get("username")
+        if username:
+            session["user"] = username
             return redirect("/")
     return render_template("login.html")
 
@@ -31,38 +21,34 @@ def logout():
     session.clear()
     return redirect("/login")
 
-# ---------------- MAIN CHAT ----------------
 @app.route("/", methods=["GET", "POST"])
-@limiter.limit("10 per minute")
 def index():
     if "user" not in session:
         return redirect("/login")
 
     answer = None
+    question = None
+
     if request.method == "POST":
         question = request.form.get("question")
 
-        try:
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are OpenTutor AI. Explain clearly in simple language with emojis and exam-focused points."
-                    },
-                    {
-                        "role": "user",
-                        "content": question
-                    }
-                ]
-            )
-            answer = response.choices[0].message.content
+        prompt = f"""
+Tum ek AI Tutor ho.
+Student ka sawal dhyaan se samjho aur
+clear headings, points, examples aur emojis ke saath jawab do.
 
-        except Exception as e:
-            answer = f"⚠️ Error: {str(e)}"
+Sawal:
+{question}
+"""
 
-    return render_template("index.html", answer=answer)
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role": "user", "content": prompt}]
+        )
 
-# ---------------- RUN ----------------
+        answer = response.choices[0].message.content
+
+    return render_template("index.html", answer=answer, question=question)
+
 if __name__ == "__main__":
     app.run(debug=True)

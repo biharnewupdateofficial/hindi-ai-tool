@@ -2,28 +2,38 @@
 <html>
 <head>
     <title>OpenTutor AI</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
-<a href="/logout">Logout</a>
-
-<h2>🤖 OpenTutor AI (Exam Mode)</h2>
-
-<form method="POST">
-    <textarea name="question" rows="5" cols="60"
-        placeholder="jaise: Class 10 ka quadratic equation samjhao"
-        required></textarea><br><br>
-    <button type="submit">📘 Jawab Pao</button>
-</form>
-
-<hr>
-
-{% if answer %}
-<h3>📘 AI ka Jawab:</h3>
-<div style="white-space: pre-wrap;">
-{{ answer }}
+<div class="topbar">
+    🤖 <b>OpenTutor AI (Exam Mode)</b>
+    <a href="/logout">Logout</a>
 </div>
-{% endif %}
+
+<div class="container">
+
+    <form method="POST" class="chat-box">
+        <h3>✍️ Apna sawal likho</h3>
+        <textarea name="question" placeholder="jaise: Class 10 ka quadratic equation samjhao" required></textarea>
+        <button type="submit">📘 Jawab Pao</button>
+    </form>
+
+    {% if question %}
+    <div class="message user">
+        <b>🧑 Tum:</b>
+        <p>{{ question }}</p>
+    </div>
+    {% endif %}
+
+    {% if answer %}
+    <div class="message ai">
+        <b>🤖 OpenTutor AI:</b>
+        <pre>{{ answer }}</pre>
+    </div>
+    {% endif %}
+
+</div>
 
 </body>
 </html>

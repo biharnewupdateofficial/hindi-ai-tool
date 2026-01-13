@@ -1,38 +1,90 @@
 body {
-  background:#eef3ff;
-  font-family: Arial;
-  padding:30px;
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f4f6f9;
 }
 
-.card {
-  background:white;
-  max-width:800px;
-  margin:auto;
-  padding:25px;
-  border-radius:12px;
-  box-shadow:0 10px 25px rgba(0,0,0,0.1);
+.topbar {
+    background: #2563eb;
+    color: white;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    font-size: 18px;
+}
+
+.topbar a {
+    color: white;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+.container {
+    max-width: 900px;
+    margin: 30px auto;
+    padding: 10px;
+}
+
+.chat-box {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
 }
 
 textarea {
-  width:100%;
-  height:120px;
-  padding:10px;
+    width: 100%;
+    height: 120px;
+    padding: 10px;
+    font-size: 16px;
 }
 
 button {
-  margin-top:10px;
-  padding:10px 20px;
-  background:#2563eb;
-  color:white;
-  border:none;
-  border-radius:6px;
-  cursor:pointer;
+    margin-top: 10px;
+    padding: 10px 20px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    cursor: pointer;
 }
 
-.answer {
-  margin-top:20px;
-  background:#f1f5ff;
-  padding:15px;
-  border-left:4px solid #2563eb;
-  white-space:pre-wrap;
+.message {
+    margin-top: 20px;
+    padding: 15px;
+    border-radius: 10px;
+}
+
+.user {
+    background: #e0f2fe;
+}
+
+.ai {
+    background: #ecfeff;
+}
+
+pre {
+    white-space: pre-wrap;
+    font-family: inherit;
+}
+
+.center {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+.card {
+    background: white;
+    padding: 30px;
+    border-radius: 10px;
+    width: 300px;
+    text-align: center;
+}
+
+input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
 }

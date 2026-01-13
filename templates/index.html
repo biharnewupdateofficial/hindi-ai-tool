@@ -14,21 +14,23 @@
         <a href="/logout" class="logout">Logout</a>
     </header>
 
-    <div class="chat-box">
+    <div class="chat-box" id="chatBox">
 
-        {% if question %}
-        <div class="message user">
-            <div class="bubble">
-                {{ question }}
+        {% for msg in chat %}
+            {% if msg.role == "user" %}
+            <div class="message user">
+                <div class="bubble">{{ msg.content }}</div>
             </div>
-        </div>
-        {% endif %}
+            {% else %}
+            <div class="message ai">
+                <div class="bubble">{{ msg.content | safe }}</div>
+            </div>
+            {% endif %}
+        {% endfor %}
 
-        {% if answer %}
+        {% if loading %}
         <div class="message ai">
-            <div class="bubble">
-                {{ answer | safe }}
-            </div>
+            <div class="bubble typing">AI soch raha hai...</div>
         </div>
         {% endif %}
 
@@ -40,6 +42,11 @@
     </form>
 
 </div>
+
+<script>
+    const chatBox = document.getElementById("chatBox");
+    chatBox.scrollTop = chatBox.scrollHeight;
+</script>
 
 </body>
 </html>

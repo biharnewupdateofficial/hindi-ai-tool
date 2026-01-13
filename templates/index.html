@@ -11,42 +11,31 @@
 
     <header class="top-bar">
         <div class="logo">🤖 OpenTutor AI</div>
+
+        <form method="POST" action="/set-language">
+            <select name="lang" onchange="this.form.submit()">
+                <option value="hi" {% if lang=='hi' %}selected{% endif %}>Hindi</option>
+                <option value="en" {% if lang=='en' %}selected{% endif %}>English</option>
+            </select>
+        </form>
+
         <a href="/logout" class="logout">Logout</a>
     </header>
 
-    <div class="chat-box" id="chatBox">
-
+    <div class="chat-box">
         {% for msg in chat %}
-            {% if msg.role == "user" %}
-            <div class="message user">
-                <div class="bubble">{{ msg.content }}</div>
-            </div>
-            {% else %}
-            <div class="message ai">
+            <div class="message {{ msg.role }}">
                 <div class="bubble">{{ msg.content | safe }}</div>
             </div>
-            {% endif %}
         {% endfor %}
-
-        {% if loading %}
-        <div class="message ai">
-            <div class="bubble typing">AI soch raha hai...</div>
-        </div>
-        {% endif %}
-
     </div>
 
     <form method="POST" class="input-box">
-        <textarea name="question" placeholder="Apna sawal likho..." required></textarea>
-        <button type="submit">Jawab Pao</button>
+        <textarea name="question" placeholder="Ask your question..." required></textarea>
+        <button type="submit">Ask</button>
     </form>
 
 </div>
-
-<script>
-    const chatBox = document.getElementById("chatBox");
-    chatBox.scrollTop = chatBox.scrollHeight;
-</script>
 
 </body>
 </html>

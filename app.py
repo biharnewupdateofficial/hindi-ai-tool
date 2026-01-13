@@ -12,8 +12,14 @@ def login():
     if request.method == "POST":
         session["user"] = request.form.get("name")
         session["chat"] = []
+        session["lang"] = "hi"
         return redirect("/")
     return render_template("login.html")
+
+@app.route("/set-language", methods=["POST"])
+def set_language():
+    session["lang"] = request.form.get("lang", "hi")
+    return redirect("/")
 
 @app.route("/logout")
 def logout():
@@ -26,16 +32,22 @@ def index():
         return redirect("/login")
 
     chat = session.get("chat", [])
+    lang = session.get("lang", "hi")
 
     if request.method == "POST":
         question = request.form.get("question")
-
         chat.append({"role": "user", "content": question})
+
+        system_prompt = (
+            "You are OpenTutor AI. Answer in simple Hindi for exam preparation."
+            if lang == "hi"
+            else "You are OpenTutor AI. Answer in clear English for exam preparation."
+        )
 
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
-                {"role": "system", "content": "You are a helpful AI tutor. Answer in simple Hindi, exam focused."},
+                {"role": "system", "content": system_prompt},
                 *chat
             ]
         )
@@ -45,11 +57,7 @@ def index():
 
         session["chat"] = chat
 
-    return render_template(
-        "index.html",
-        chat=chat,
-        loading=False
-    )
+    return render_template("index.html", chat=chat, lang=lang)
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)

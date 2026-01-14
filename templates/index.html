@@ -1,26 +1,50 @@
 <!DOCTYPE html>
-<html>
+<html lang="hi">
 <head>
-  <title>OpenTutor AI</title>
-  <link rel="stylesheet" href="/static/style.css">
+    <meta charset="UTF-8">
+    <title>OpenTutor AI</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
 <div class="container">
-  <h1>🤖 OpenTutor AI</h1>
+    <h1>🤖 OpenTutor AI</h1>
+    <p>Welcome, {{ username }}</p>
+    <a href="/logout">Logout</a>
 
-  <div class="chat-box">
-    {% for msg in messages %}
-      <div class="message {{ msg.role }}">
-        {{ msg.content }}
-      </div>
-    {% endfor %}
-  </div>
+    <!-- CHAT HISTORY -->
+    <div class="chat-box">
+        {% for msg in chat %}
+            {% if msg.role == "user" %}
+                <div class="user-msg">
+                    <strong>You:</strong> {{ msg.content }}
+                </div>
+            {% else %}
+                <div class="ai-msg">
+                    <strong>AI:</strong> {{ msg.content }}
+                </div>
+            {% endif %}
+        {% endfor %}
+    </div>
 
-  <form method="POST">
-    <textarea name="question" placeholder="Ask anything..."></textarea>
-    <button type="submit">Send</button>
-  </form>
+    <!-- FORM -->
+    <form method="POST">
+        <textarea
+            name="question"
+            placeholder="Apna sawal yahan likhiye..."
+            required
+        ></textarea>
+
+        <button type="submit">Jawab Pao</button>
+    </form>
+
+    <!-- ANSWER (latest) -->
+    {% if answer %}
+        <div class="answer-box">
+            <h3>AI ka Jawab:</h3>
+            <p>{{ answer }}</p>
+        </div>
+    {% endif %}
 </div>
 
 </body>

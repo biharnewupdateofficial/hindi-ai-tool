@@ -20,10 +20,15 @@
 </div>
 
 <script>
+/* ===============================
+   BASIC ELEMENTS
+================================ */
 const chatBox = document.getElementById("chat-box");
 const input = document.getElementById("question");
 
-// Load old chat on page load
+/* ===============================
+   LOAD OLD CHAT ON REFRESH
+================================ */
 window.onload = () => {
     const savedChat = localStorage.getItem("opentutor_chat");
     if (savedChat) {
@@ -32,6 +37,31 @@ window.onload = () => {
     }
 };
 
+/* ===============================
+   DAILY FREE LIMIT LOGIC
+================================ */
+const DAILY_LIMIT = 5;
+
+function getTodayKey() {
+    const today = new Date().toISOString().split("T")[0];
+    return "opentutor_count_" + today;
+}
+
+function canAskQuestion() {
+    const key = getTodayKey();
+    const count = parseInt(localStorage.getItem(key) || "0");
+    return count < DAILY_LIMIT;
+}
+
+function increaseCount() {
+    const key = getTodayKey();
+    const count = parseInt(localStorage.getItem(key) || "0");
+    localStorage.setItem(key, count + 1);
+}
+
+/* ===============================
+   CHAT FUNCTIONS
+================================ */
 function addMessage(text, sender, typing=false) {
     const msg = document.createElement("div");
     msg.className = sender === "user" ? "user-msg" : "ai-msg";
@@ -39,10 +69,19 @@ function addMessage(text, sender, typing=false) {
     if (typing) msg.id = "typing";
     chatBox.appendChild(msg);
     chatBox.scrollTop = chatBox.scrollHeight;
+
     localStorage.setItem("opentutor_chat", chatBox.innerHTML);
 }
 
 function sendQuestion() {
+    if (!canAskQuestion()) {
+        addMessage(
+            "❌ Aaj ka free limit khatam ho gaya hai.\nPro version lo unlimited use ke liye 💎",
+            "ai"
+        );
+        return;
+    }
+
     const question = input.value.trim();
     if (!question) return;
 
@@ -62,6 +101,7 @@ function sendQuestion() {
         const typing = document.getElementById("typing");
         if (typing) typing.remove();
         addMessage(data.answer, "ai");
+        increaseCount();
     })
     .catch(() => {
         const typing = document.getElementById("typing");
@@ -70,7 +110,9 @@ function sendQuestion() {
     });
 }
 
-// ENTER = send, SHIFT+ENTER = new line
+/* ===============================
+   ENTER KEY SUPPORT
+================================ */
 input.addEventListener("keydown", function(e) {
     if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -78,7 +120,9 @@ input.addEventListener("keydown", function(e) {
     }
 });
 
-// Clear chat
+/* ===============================
+   CLEAR CHAT
+================================ */
 function clearChat() {
     chatBox.innerHTML = "";
     localStorage.removeItem("opentutor_chat");

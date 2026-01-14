@@ -1,62 +1,70 @@
+from flask import Flask, render_template, request, session, redirect, url_for
 import os
-from flask import Flask, render_template, request
 from openai import OpenAI
 
 app = Flask(__name__)
+app.secret_key = "opentutor-secret-key"
 
-client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# Chat memory (session-like, simple)
-messages = [
-    {
-        "role": "system",
-        "content": (
-            "You are OpenTutor AI, a helpful, polite, intelligent tutor like ChatGPT. "
-            "You ONLY answer based on the user's question. "
-            "Never change the topic on your own. "
-            "Explain clearly, step by step, in simple language. "
-            "If the user asks in Hindi, reply in Hindi. "
-            "If the user asks in English, reply in English."
-        )
-    }
-]
+SYSTEM_PROMPT = """
+You are OpenTutor AI, a friendly, intelligent, multilingual AI tutor like ChatGPT.
+
+Rules:
+- Remember previous messages in the conversation
+- Answer naturally and politely
+- Reply in the same language as the user
+- Explain step by step when teaching
+- If user changes topic, smoothly continue conversation
+"""
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        session["user"] = request.form.get("username", "User")
+        session["chat"] = []
+        return redirect(url_for("index"))
+    return render_template("login.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
 
 @app.route("/", methods=["GET", "POST"])
 def index():
-    global messages
+    if "user" not in session:
+        return redirect(url_for("login"))
+
+    answer = ""
+    if "chat" not in session:
+        session["chat"] = []
 
     if request.method == "POST":
-        user_input = request.form.get("question")
+        user_question = request.form.get("question")
 
-        if user_input:
-            messages.append({
-                "role": "user",
-                "content": user_input
-            })
+        session["chat"].append({"role": "user", "content": user_question})
 
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=messages
-            )
+        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+        messages.extend(session["chat"])
 
-            ai_reply = response.choices[0].message.content
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+            temperature=0.7
+        )
 
-            messages.append({
-                "role": "assistant",
-                "content": ai_reply
-            })
+        answer = response.choices[0].message.content
 
-    # send only user + assistant messages to UI
-    display_messages = [
-        {
-            "role": "user" if m["role"] == "user" else "ai",
-            "content": m["content"]
-        }
-        for m in messages
-        if m["role"] != "system"
-    ]
+        session["chat"].append({"role": "assistant", "content": answer})
+        session.modified = True
 
-    return render_template("index.html", messages=display_messages)
+    return render_template(
+        "index.html",
+        answer=answer,
+        chat=session["chat"],
+        username=session["user"]
+    )
 
 if __name__ == "__main__":
     app.run(debug=True)

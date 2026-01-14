@@ -36,8 +36,8 @@ def register():
         try:
             with get_db() as db:
                 db.execute(
-                    "INSERT INTO users (email, password) VALUES (?,?)",
-                    (email, password)
+                    "INSERT INTO users (email, password, last_used_date) VALUES (?,?,?)",
+                    (email, password, "")
                 )
             return redirect("/login")
         except:
@@ -93,9 +93,10 @@ def index():
     user = db.execute("SELECT * FROM users WHERE email=?", (user_email,)).fetchone()
 
     today = datetime.date.today().isoformat()
+    last_date = user["last_used_date"] or ""
 
-    # Reset daily count if new day
-    if user["last_used_date"] != today:
+    # SAFE daily reset
+    if last_date != today:
         db.execute(
             "UPDATE users SET daily_count=0, last_used_date=? WHERE email=?",
             (today, user_email)

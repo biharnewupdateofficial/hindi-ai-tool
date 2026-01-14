@@ -25,6 +25,27 @@
 const chatBox = document.getElementById("chat-box");
 const input = document.getElementById("question");
 
+/* ===============================
+   LOAD CHAT ON PAGE LOAD
+================================ */
+window.onload = () => {
+    const savedChat = localStorage.getItem("opentutor_chat");
+    if (savedChat) {
+        chatBox.innerHTML = savedChat;
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+};
+
+/* ===============================
+   SAVE CHAT
+================================ */
+function saveChat() {
+    localStorage.setItem("opentutor_chat", chatBox.innerHTML);
+}
+
+/* ===============================
+   ADD MESSAGE
+================================ */
 function addMessage(text, sender, id=null) {
     const msg = document.createElement("div");
     msg.className = sender === "user" ? "user-msg" : "ai-msg";
@@ -32,8 +53,12 @@ function addMessage(text, sender, id=null) {
     if (id) msg.id = id;
     chatBox.appendChild(msg);
     chatBox.scrollTop = chatBox.scrollHeight;
+    saveChat();
 }
 
+/* ===============================
+   SEND QUESTION
+================================ */
 function sendQuestion() {
     const q = input.value.trim();
     if (!q) return;
@@ -61,6 +86,9 @@ function sendQuestion() {
     });
 }
 
+/* ===============================
+   ENTER KEY SUPPORT
+================================ */
 input.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -68,6 +96,9 @@ input.addEventListener("keydown", e => {
     }
 });
 
+/* ===============================
+   MODE SWITCH
+================================ */
 function setMode(mode) {
     fetch("/set-mode", {
         method: "POST",
@@ -76,13 +107,20 @@ function setMode(mode) {
     })
     .then(() => {
         chatBox.innerHTML = "";
+        localStorage.removeItem("opentutor_chat");
         addMessage(`🔁 ${mode.toUpperCase()} MODE ON`, "ai");
     });
 }
 
+/* ===============================
+   CLEAR CHAT
+================================ */
 function clearChat() {
     fetch("/clear", {method: "POST"})
-    .then(() => chatBox.innerHTML = "");
+    .then(() => {
+        chatBox.innerHTML = "";
+        localStorage.removeItem("opentutor_chat");
+    });
 }
 </script>
 

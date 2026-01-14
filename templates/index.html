@@ -14,30 +14,23 @@
 
     <div class="input-area">
         <textarea id="question" placeholder="Apna sawal yahan likhiye..."></textarea>
+        <button onclick="sendQuestion()">Send</button>
         <button onclick="clearChat()">🧹 New Chat</button>
     </div>
 </div>
 
 <script>
-window.onload = () => {
-    const savedChat = localStorage.getItem("opentutor_chat");
-    if (savedChat) {
-        chatBox.innerHTML = savedChat;
-    }
-};
-
-const chatBox = document.getElementById("chat-box");
-
-// Load old chat
-window.onload = () => {
-    const savedChat = localStorage.getItem("opentutor_chat");
-    if (savedChat) {
-        chatBox.innerHTML = savedChat;
-    }
-};
-
 const chatBox = document.getElementById("chat-box");
 const input = document.getElementById("question");
+
+// Load old chat on page load
+window.onload = () => {
+    const savedChat = localStorage.getItem("opentutor_chat");
+    if (savedChat) {
+        chatBox.innerHTML = savedChat;
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+};
 
 function addMessage(text, sender, typing=false) {
     const msg = document.createElement("div");
@@ -47,7 +40,6 @@ function addMessage(text, sender, typing=false) {
     chatBox.appendChild(msg);
     chatBox.scrollTop = chatBox.scrollHeight;
     localStorage.setItem("opentutor_chat", chatBox.innerHTML);
-
 }
 
 function sendQuestion() {
@@ -92,7 +84,6 @@ function clearChat() {
     localStorage.removeItem("opentutor_chat");
 }
 </script>
-
 
 </body>
 </html>

@@ -1,24 +1,27 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>OpenTutor AI</title>
+  <title>OpenTutor AI</title>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
-<a href="/logout">Logout</a>
+<div class="container">
+  <h1>🤖 OpenTutor AI</h1>
 
-<h2>🤖 OpenTutor AI (Exam Mode)</h2>
+  <div class="chat-box">
+    {% for msg in messages %}
+      <div class="message {{ msg.role }}">
+        {{ msg.content }}
+      </div>
+    {% endfor %}
+  </div>
 
-<form method="POST">
-    <textarea name="question" rows="5" cols="60" placeholder="Apna sawal likho..." required></textarea><br><br>
-    <button type="submit">📘 Jawab Pao</button>
-</form>
-
-{% if answer %}
-    <hr>
-    <h3>📘 AI ka Jawab:</h3>
-    <pre>{{ answer }}</pre>
-{% endif %}
+  <form method="POST">
+    <textarea name="question" placeholder="Ask anything..."></textarea>
+    <button type="submit">Send</button>
+  </form>
+</div>
 
 </body>
 </html>

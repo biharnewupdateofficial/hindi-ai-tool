@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="hi">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <title>OpenTutor AI</title>
@@ -7,45 +7,55 @@
 </head>
 <body>
 
-<div class="container">
+<div class="app-container">
     <h1>🤖 OpenTutor AI</h1>
-    <p>Welcome, {{ username }}</p>
-    <a href="/logout">Logout</a>
 
-    <!-- CHAT HISTORY -->
-    <div class="chat-box">
-        {% for msg in chat %}
-            {% if msg.role == "user" %}
-                <div class="user-msg">
-                    <strong>You:</strong> {{ msg.content }}
-                </div>
-            {% else %}
-                <div class="ai-msg">
-                    <strong>AI:</strong> {{ msg.content }}
-                </div>
-            {% endif %}
-        {% endfor %}
+    <div id="chat-box"></div>
+
+    <div class="input-area">
+        <textarea id="question" placeholder="Apna sawal yahan likhiye..."></textarea>
+        <button onclick="sendQuestion()">Send</button>
     </div>
-
-    <!-- FORM -->
-    <form method="POST">
-        <textarea
-            name="question"
-            placeholder="Apna sawal yahan likhiye..."
-            required
-        ></textarea>
-
-        <button type="submit">Jawab Pao</button>
-    </form>
-
-    <!-- ANSWER (latest) -->
-    {% if answer %}
-        <div class="answer-box">
-            <h3>AI ka Jawab:</h3>
-            <p>{{ answer }}</p>
-        </div>
-    {% endif %}
 </div>
+
+<script>
+function addMessage(text, sender) {
+    const chatBox = document.getElementById("chat-box");
+    const msg = document.createElement("div");
+    msg.className = sender === "user" ? "user-msg" : "ai-msg";
+    msg.innerText = text;
+    chatBox.appendChild(msg);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function sendQuestion() {
+    const input = document.getElementById("question");
+    const question = input.value.trim();
+    if (!question) return;
+
+    addMessage(question, "user");
+    input.value = "";
+
+    addMessage("⏳ OpenTutor AI soch raha hai...", "ai");
+
+    fetch("/ask", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ question })
+    })
+    .then(res => res.json())
+    .then(data => {
+        const aiMsgs = document.querySelectorAll(".ai-msg");
+        aiMsgs[aiMsgs.length - 1].innerText = data.answer;
+    })
+    .catch(() => {
+        const aiMsgs = document.querySelectorAll(".ai-msg");
+        aiMsgs[aiMsgs.length - 1].innerText = "❌ Error aaya, dobara try karein";
+    });
+}
+</script>
 
 </body>
 </html>

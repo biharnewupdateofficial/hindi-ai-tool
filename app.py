@@ -68,3 +68,27 @@ def index():
 
 if __name__ == "__main__":
     app.run(debug=True)
+from flask import jsonify
+
+@app.route("/ask", methods=["POST"])
+def ask():
+    data = request.get_json()
+    question = data.get("question", "").strip()
+
+    if not question:
+        return jsonify({"answer": "❌ Sawaal khali hai"})
+
+    try:
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are OpenTutor AI. Explain clearly in Hindi."},
+                {"role": "user", "content": question}
+            ]
+        )
+
+        answer = response.choices[0].message.content
+        return jsonify({"answer": answer})
+
+    except Exception as e:
+        return jsonify({"answer": f"Error: {str(e)}"})

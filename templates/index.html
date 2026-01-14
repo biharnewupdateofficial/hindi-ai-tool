@@ -1,7 +1,6 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
     <title>OpenTutor AI</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
@@ -10,98 +9,49 @@
 <div class="app-container">
     <h1>🤖 OpenTutor AI</h1>
 
-    <div id="chat-box"></div>
-
-    <div class="input-area">
-        <textarea id="question" placeholder="Apna sawal yahan likhiye..."></textarea>
-        <button onclick="sendQuestion()">Send</button>
+    <div class="mode-bar">
+        <button onclick="setMode('tutor')">🧠 Tutor</button>
+        <button onclick="setMode('exam')">📝 Exam</button>
         <button onclick="clearChat()">🧹 New Chat</button>
     </div>
+
+    <div id="chat-box"></div>
+
+    <textarea id="question" placeholder="Type your question..."></textarea>
 </div>
 
 <script>
-/* ===============================
-   BASIC ELEMENTS
-================================ */
 const chatBox = document.getElementById("chat-box");
 const input = document.getElementById("question");
 
-/* ===============================
-   LOAD OLD CHAT ON REFRESH
-================================ */
-window.onload = () => {
-    const savedChat = localStorage.getItem("opentutor_chat");
-    if (savedChat) {
-        chatBox.innerHTML = savedChat;
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-};
-
-/* ===============================
-   DAILY FREE LIMIT LOGIC
-================================ */
-const DAILY_LIMIT = 5;
-
-function getTodayKey() {
-    const today = new Date().toISOString().split("T")[0];
-    return "opentutor_count_" + today;
-}
-
-function canAskQuestion() {
-    const key = getTodayKey();
-    const count = parseInt(localStorage.getItem(key) || "0");
-    return count < DAILY_LIMIT;
-}
-
-function increaseCount() {
-    const key = getTodayKey();
-    const count = parseInt(localStorage.getItem(key) || "0");
-    localStorage.setItem(key, count + 1);
-}
-
-/* ===============================
-   CHAT FUNCTIONS
-================================ */
-function addMessage(text, sender, typing=false) {
+function addMessage(text, sender, id=null) {
     const msg = document.createElement("div");
     msg.className = sender === "user" ? "user-msg" : "ai-msg";
     msg.innerText = text;
-    if (typing) msg.id = "typing";
+    if (id) msg.id = id;
     chatBox.appendChild(msg);
     chatBox.scrollTop = chatBox.scrollHeight;
-
-    localStorage.setItem("opentutor_chat", chatBox.innerHTML);
 }
 
 function sendQuestion() {
-    if (!canAskQuestion()) {
-        addMessage(
-            "❌ Aaj ka free limit khatam ho gaya hai.\nPro version lo unlimited use ke liye 💎",
-            "ai"
-        );
-        return;
-    }
+    const q = input.value.trim();
+    if (!q) return;
 
-    const question = input.value.trim();
-    if (!question) return;
-
-    addMessage(question, "user");
+    addMessage(q, "user");
     input.value = "";
-    input.focus();
 
-    addMessage("OpenTutor AI likh raha hai...", "ai", true);
+    addMessage("✍️ OpenTutor AI likh raha hai...", "ai", "typing");
 
     fetch("/ask", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question })
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({question: q})
     })
-    .then(res => res.json())
-    .then(data => {
+    .then(r => r.json())
+    .then(d => {
         const typing = document.getElementById("typing");
         if (typing) typing.remove();
-        addMessage(data.answer, "ai");
-        increaseCount();
+        addMessage(d.answer, "ai");
     })
     .catch(() => {
         const typing = document.getElementById("typing");
@@ -110,22 +60,28 @@ function sendQuestion() {
     });
 }
 
-/* ===============================
-   ENTER KEY SUPPORT
-================================ */
-input.addEventListener("keydown", function(e) {
+input.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         sendQuestion();
     }
 });
 
-/* ===============================
-   CLEAR CHAT
-================================ */
+function setMode(mode) {
+    fetch("/set-mode", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({mode})
+    })
+    .then(() => {
+        chatBox.innerHTML = "";
+        addMessage(`🔁 ${mode.toUpperCase()} MODE ON`, "ai");
+    });
+}
+
 function clearChat() {
-    chatBox.innerHTML = "";
-    localStorage.removeItem("opentutor_chat");
+    fetch("/clear", {method: "POST"})
+    .then(() => chatBox.innerHTML = "");
 }
 </script>
 

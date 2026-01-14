@@ -19,6 +19,23 @@
 </div>
 
 <script>
+window.onload = () => {
+    const savedChat = localStorage.getItem("opentutor_chat");
+    if (savedChat) {
+        chatBox.innerHTML = savedChat;
+    }
+};
+
+const chatBox = document.getElementById("chat-box");
+
+// Load old chat
+window.onload = () => {
+    const savedChat = localStorage.getItem("opentutor_chat");
+    if (savedChat) {
+        chatBox.innerHTML = savedChat;
+    }
+};
+
 const chatBox = document.getElementById("chat-box");
 const input = document.getElementById("question");
 
@@ -29,6 +46,8 @@ function addMessage(text, sender, typing=false) {
     if (typing) msg.id = "typing";
     chatBox.appendChild(msg);
     chatBox.scrollTop = chatBox.scrollHeight;
+    localStorage.setItem("opentutor_chat", chatBox.innerHTML);
+
 }
 
 function sendQuestion() {
@@ -70,6 +89,7 @@ input.addEventListener("keydown", function(e) {
 // Clear chat
 function clearChat() {
     chatBox.innerHTML = "";
+    localStorage.removeItem("opentutor_chat");
 }
 </script>
 

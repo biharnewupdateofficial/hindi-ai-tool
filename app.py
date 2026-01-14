@@ -1,11 +1,12 @@
-from flask import Flask, render_template, request, redirect, session
-from werkzeug.security import generate_password_hash, check_password_hash
-import sqlite3, os, datetime
+from flask import Flask, render_template, request, redirect, session, url_for
+import sqlite3
+import os
 from openai import OpenAI
 
 app = Flask(__name__)
-app.secret_key = "opentutor-secret-key"
+app.secret_key = "super-secret-key"
 
+# OpenAI client (NEW SDK)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # ---------- DATABASE ----------
@@ -14,56 +15,41 @@ def get_db():
     conn.row_factory = sqlite3.Row
     return conn
 
-with get_db() as db:
-    db.execute("""
+def init_db():
+    conn = get_db()
+    conn.execute("""
         CREATE TABLE IF NOT EXISTS users (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE,
-            password TEXT,
-            is_pro INTEGER DEFAULT 0,
-            daily_count INTEGER DEFAULT 0,
-            last_used_date TEXT
+            username TEXT UNIQUE
         )
     """)
+    conn.commit()
+    conn.close()
 
-# ---------- AUTH ----------
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    if request.method == "POST":
-        email = request.form["email"]
-        password = generate_password_hash(request.form["password"])
+init_db()
 
-        try:
-            with get_db() as db:
-                db.execute(
-                    "INSERT INTO users (email, password, last_used_date) VALUES (?,?,?)",
-                    (email, password, "")
-                )
-            return redirect("/login")
-        except:
-            return "User already exists"
-
-    return render_template("register.html")
-
-
+# ---------- ROUTES ----------
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "POST":
-        email = request.form["email"]
-        password = request.form["password"]
+        username = request.form["username"].strip()
+        if not username:
+            return render_template("login.html", error="Naam zaroori hai")
 
-        user = get_db().execute(
-            "SELECT * FROM users WHERE email=?",
-            (email,)
+        conn = get_db()
+        user = conn.execute(
+            "SELECT * FROM users WHERE username = ?", (username,)
         ).fetchone()
 
-        if user and check_password_hash(user["password"], password):
-            session["user"] = email
-            session["chat"] = []
-            session["lang"] = "hi"
-            return redirect("/")
-        else:
-            return "Invalid login"
+        if not user:
+            conn.execute(
+                "INSERT INTO users (username) VALUES (?)", (username,)
+            )
+            conn.commit()
+
+        conn.close()
+        session["user"] = username
+        return redirect("/")
 
     return render_template("login.html")
 
@@ -73,77 +59,39 @@ def logout():
     session.clear()
     return redirect("/login")
 
-# ---------- LANGUAGE ----------
-@app.route("/set-language", methods=["POST"])
-def set_language():
-    session["lang"] = request.form.get("lang", "hi")
-    return redirect("/")
 
-# ---------- MAIN ----------
 @app.route("/", methods=["GET", "POST"])
 def index():
     if "user" not in session:
         return redirect("/login")
 
-    chat = session.get("chat", [])
-    lang = session.get("lang", "hi")
-    user_email = session["user"]
-
-    db = get_db()
-    user = db.execute("SELECT * FROM users WHERE email=?", (user_email,)).fetchone()
-
-    today = datetime.date.today().isoformat()
-    last_date = user["last_used_date"] or ""
-
-    # SAFE daily reset
-    if last_date != today:
-        db.execute(
-            "UPDATE users SET daily_count=0, last_used_date=? WHERE email=?",
-            (today, user_email)
-        )
-        db.commit()
-        user = db.execute("SELECT * FROM users WHERE email=?", (user_email,)).fetchone()
-
-    FREE_LIMIT = 5
+    answer = None
 
     if request.method == "POST":
-        if user["is_pro"] == 0 and user["daily_count"] >= FREE_LIMIT:
-            chat.append({
-                "role": "assistant",
-                "content": "🚫 Aaj ka free limit khatam ho gaya. Pro version le kar unlimited questions pooch sakte ho."
-            })
-            session["chat"] = chat
-            return render_template("index.html", chat=chat, lang=lang)
-
         question = request.form["question"]
-        chat.append({"role": "user", "content": question})
 
-        system_prompt = (
-            "You are OpenTutor AI. Answer in simple Hindi for exams."
-            if lang == "hi"
-            else "You are OpenTutor AI. Answer in clear English for exams."
-        )
+        try:
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "Tum ek helpful AI tutor ho. Simple Hindi + emojis use karo."
+                    },
+                    {
+                        "role": "user",
+                        "content": question
+                    }
+                ]
+            )
 
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": system_prompt},
-                *chat
-            ]
-        )
+            answer = response.choices[0].message.content
 
-        answer = response.choices[0].message.content
-        chat.append({"role": "assistant", "content": answer})
+        except Exception as e:
+            answer = f"❌ Error: {str(e)}"
 
-        db.execute(
-            "UPDATE users SET daily_count = daily_count + 1 WHERE email=?",
-            (user_email,)
-        )
-        db.commit()
+    return render_template("index.html", answer=answer)
 
-        session["chat"] = chat
-
-    return render_template("index.html", chat=chat, lang=lang)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    app.run(debug=True)

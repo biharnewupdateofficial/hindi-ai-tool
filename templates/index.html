@@ -14,48 +14,65 @@
 
     <div class="input-area">
         <textarea id="question" placeholder="Apna sawal yahan likhiye..."></textarea>
-        <button onclick="sendQuestion()">Send</button>
+        <button onclick="clearChat()">🧹 New Chat</button>
     </div>
 </div>
 
 <script>
-function addMessage(text, sender) {
-    const chatBox = document.getElementById("chat-box");
+const chatBox = document.getElementById("chat-box");
+const input = document.getElementById("question");
+
+function addMessage(text, sender, typing=false) {
     const msg = document.createElement("div");
     msg.className = sender === "user" ? "user-msg" : "ai-msg";
     msg.innerText = text;
+    if (typing) msg.id = "typing";
     chatBox.appendChild(msg);
     chatBox.scrollTop = chatBox.scrollHeight;
 }
 
 function sendQuestion() {
-    const input = document.getElementById("question");
     const question = input.value.trim();
     if (!question) return;
 
     addMessage(question, "user");
     input.value = "";
+    input.focus();
 
-    addMessage("⏳ OpenTutor AI soch raha hai...", "ai");
+    addMessage("OpenTutor AI likh raha hai...", "ai", true);
 
     fetch("/ask", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question })
     })
     .then(res => res.json())
     .then(data => {
-        const aiMsgs = document.querySelectorAll(".ai-msg");
-        aiMsgs[aiMsgs.length - 1].innerText = data.answer;
+        const typing = document.getElementById("typing");
+        if (typing) typing.remove();
+        addMessage(data.answer, "ai");
     })
     .catch(() => {
-        const aiMsgs = document.querySelectorAll(".ai-msg");
-        aiMsgs[aiMsgs.length - 1].innerText = "❌ Error aaya, dobara try karein";
+        const typing = document.getElementById("typing");
+        if (typing) typing.remove();
+        addMessage("❌ Error aaya, dobara try karein", "ai");
     });
 }
+
+// ENTER = send, SHIFT+ENTER = new line
+input.addEventListener("keydown", function(e) {
+    if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        sendQuestion();
+    }
+});
+
+// Clear chat
+function clearChat() {
+    chatBox.innerHTML = "";
+}
 </script>
+
 
 </body>
 </html>

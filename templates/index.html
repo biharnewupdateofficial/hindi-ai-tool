@@ -7,34 +7,26 @@
 </head>
 <body>
 
-<div class="app">
+<a href="/logout" class="logout">Logout</a>
 
-    <header class="top-bar">
-        <div class="logo">🤖 OpenTutor AI</div>
+<div class="container">
+    <h1>🤖 OpenTutor AI (Exam Mode)</h1>
 
-        <form method="POST" action="/set-language">
-            <select name="lang" onchange="this.form.submit()">
-                <option value="hi" {% if lang=='hi' %}selected{% endif %}>Hindi</option>
-                <option value="en" {% if lang=='en' %}selected{% endif %}>English</option>
-            </select>
-        </form>
+    <form method="POST">
+        <textarea
+            name="question"
+            placeholder="jaise: Class 10 ka quadratic equation samjhao"
+            required></textarea>
 
-        <a href="/logout" class="logout">Logout</a>
-    </header>
-
-    <div class="chat-box">
-        {% for msg in chat %}
-            <div class="message {{ msg.role }}">
-                <div class="bubble">{{ msg.content | safe }}</div>
-            </div>
-        {% endfor %}
-    </div>
-
-    <form method="POST" class="input-box">
-        <textarea name="question" placeholder="Ask your question..." required></textarea>
-        <button type="submit">Ask</button>
+        <button type="submit">📘 Jawab Pao</button>
     </form>
 
+    {% if answer %}
+    <div class="answer">
+        <h2>📘 AI ka Jawab:</h2>
+        <pre>{{ answer }}</pre>
+    </div>
+    {% endif %}
 </div>
 
 </body>

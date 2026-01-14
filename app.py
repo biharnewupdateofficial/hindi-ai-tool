@@ -1,95 +1,65 @@
-from flask import Flask, render_template, request, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session
+import openai
 import os
-from openai import OpenAI
 
 app = Flask(__name__)
 app.secret_key = "opentutor-secret-key"
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 SYSTEM_PROMPT = """
-You are OpenTutor AI, a smart multilingual tutor like ChatGPT.
+You are OpenTutor AI.
+You behave like ChatGPT.
 
 Rules:
-- Detect the language of the user's question automatically
-- Reply in the SAME language (Hindi / English / Hinglish)
-- Keep answers clear, structured, and friendly
-- If teaching, explain step by step
-- Do not change topic unless user changes it
+- Always answer politely
+- Maintain conversation context
+- If user changes topic, continue normally
+- Explain clearly, step-by-step
+- Use Hindi if user uses Hindi
+- Use English if user uses English
+- If mixed language, reply in Hinglish
 """
 
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if request.method == "POST":
-        session["user"] = request.form.get("username", "User")
-        session["chat"] = []
-        return redirect(url_for("index"))
-    return render_template("login.html")
-
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect(url_for("login"))
-
-@app.route("/", methods=["GET", "POST"])
+@app.route("/")
 def index():
-    if "user" not in session:
-        return redirect(url_for("login"))
+    if "messages" not in session:
+        session["messages"] = [
+            {"role": "system", "content": SYSTEM_PROMPT}
+        ]
+    return render_template("index.html")
 
-    answer = ""
-    if "chat" not in session:
-        session["chat"] = []
+@app.route("/ask", methods=["POST"])
+def ask():
+    data = request.json
+    question = data.get("question")
 
-    if request.method == "POST":
-        user_question = request.form.get("question")
+    if not question:
+        return jsonify({"answer": "❌ Question empty hai"})
 
-        session["chat"].append({"role": "user", "content": user_question})
+    messages = session.get("messages", [])
+    messages.append({"role": "user", "content": question})
 
-        messages = [{"role": "system", "content": SYSTEM_PROMPT}]
-        messages.extend(session["chat"])
-
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
+    try:
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",
             messages=messages,
             temperature=0.7
         )
 
-        answer = response.choices[0].message.content
+        answer = response["choices"][0]["message"]["content"]
+        messages.append({"role": "assistant", "content": answer})
+        session["messages"] = messages
 
-        session["chat"].append({"role": "assistant", "content": answer})
-        session.modified = True
-
-    return render_template(
-        "index.html",
-        answer=answer,
-        chat=session["chat"],
-        username=session["user"]
-    )
-
-if __name__ == "__main__":
-    app.run(debug=True)
-from flask import jsonify
-
-@app.route("/ask", methods=["POST"])
-def ask():
-    data = request.get_json()
-    question = data.get("question", "").strip()
-
-    if not question:
-        return jsonify({"answer": "❌ Sawaal khali hai"})
-
-    try:
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are OpenTutor AI. Explain clearly in Hindi."},
-                {"role": "user", "content": question}
-            ]
-        )
-
-        answer = response.choices[0].message.content
         return jsonify({"answer": answer})
 
     except Exception as e:
-        return jsonify({"answer": f"Error: {str(e)}"})
+        return jsonify({"answer": f"❌ Error: {str(e)}"})
+
+@app.route("/clear", methods=["POST"])
+def clear():
+    session.clear()
+    return jsonify({"status": "cleared"})
+
+if __name__ == "__main__":
+    app.run()

@@ -2,79 +2,54 @@ from flask import Flask, render_template, request, jsonify, session
 from openai import OpenAI
 import os
 
-# ---------------- CONFIG ----------------
 app = Flask(__name__)
-app.secret_key = "opentutor-secret-key"  # simple session key
+app.secret_key = "opentutor-secret"
 
 client = OpenAI(api_key=os.environ.get("OPENAI_API_KEY"))
 
-# ---------------- ROUTES ----------------
-
 @app.route("/")
 def index():
-    if "history" not in session:
-        session["history"] = []
-    if "mode" not in session:
-        session["mode"] = "tutor"
+    session.setdefault("mode", "tutor")
     return render_template("index.html")
 
 
 @app.route("/set_mode", methods=["POST"])
 def set_mode():
-    data = request.json
-    session["mode"] = data.get("mode", "tutor")
-    session["history"] = []  # reset chat on mode change
-    return jsonify({"status": "ok", "mode": session["mode"]})
+    session["mode"] = request.json.get("mode", "tutor")
+    return jsonify({"status": "ok"})
 
 
 @app.route("/ask", methods=["POST"])
 def ask():
-    data = request.json
-    question = data.get("question", "").strip()
-
+    question = request.json.get("question", "").strip()
     if not question:
-        return jsonify({"answer": "❌ Sawal khali nahi ho sakta"})
+        return jsonify({"answer": "❌ Sawal khali hai"})
 
-    history = session.get("history", [])
     mode = session.get("mode", "tutor")
 
-    # -------- SYSTEM PROMPT --------
     if mode == "exam":
-        system_prompt = (
-            "You are OpenTutor AI in EXAM MODE. "
-            "Give short, direct, exam-oriented answers. "
-            "No extra explanation unless asked."
+        prompt = (
+            "Answer in EXAM MODE.\n"
+            "Short, direct, exam-oriented.\n\n"
+            f"Question: {question}"
         )
     else:
-        system_prompt = (
-            "You are OpenTutor AI in TUTOR MODE. "
-            "Explain step by step with examples "
-            "in simple Hindi-English mix."
+        prompt = (
+            "Explain like a friendly teacher in Hindi-English mix.\n"
+            "Step by step with examples.\n\n"
+            f"Question: {question}"
         )
-
-    messages = [{"role": "system", "content": system_prompt}]
-
-    # last 6 messages memory
-    for m in history[-6:]:
-        messages.append(m)
-
-    messages.append({"role": "user", "content": question})
 
     try:
         response = client.responses.create(
             model="gpt-4.1-mini",
-            input=messages
+            input=prompt
         )
 
         answer = response.output_text.strip()
 
     except Exception as e:
         return jsonify({"answer": f"❌ AI Error: {str(e)}"})
-
-    # save memory
-    history.append({"role": "user", "content": question})
-    history.append({"role": "assistant", "content": answer})
-    session["history"] = history
 
     return jsonify({"answer": answer})
 
@@ -85,6 +60,5 @@ def clear():
     return jsonify({"status": "cleared"})
 
 
-# ---------------- RUN ----------------
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=10000)

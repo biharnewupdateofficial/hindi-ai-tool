@@ -7,27 +7,53 @@ app.secret_key = "opentutor-secret-key"
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-SYSTEM_PROMPT = """
-You are OpenTutor AI.
-You behave like ChatGPT.
-
+BASE_SYSTEM_PROMPT = """
+You are OpenTutor AI, similar to ChatGPT.
 Rules:
-- Always answer politely
+- Polite, helpful
 - Maintain conversation context
-- If user changes topic, continue normally
-- Explain clearly, step-by-step
-- Use Hindi if user uses Hindi
-- Use English if user uses English
-- If mixed language, reply in Hinglish
+- Language same as user (Hindi / English / Hinglish)
+"""
+
+TUTOR_PROMPT = BASE_SYSTEM_PROMPT + """
+Mode: Tutor
+- Explain step by step
+- Give examples
+- Teach like a teacher
+"""
+
+EXAM_PROMPT = BASE_SYSTEM_PROMPT + """
+Mode: Exam
+- Give short and direct answers
+- No extra explanation
+- No hints
+- Board-exam style
 """
 
 @app.route("/")
 def index():
+    if "mode" not in session:
+        session["mode"] = "tutor"
+
     if "messages" not in session:
-        session["messages"] = [
-            {"role": "system", "content": SYSTEM_PROMPT}
-        ]
-    return render_template("index.html")
+        system_prompt = TUTOR_PROMPT if session["mode"] == "tutor" else EXAM_PROMPT
+        session["messages"] = [{"role": "system", "content": system_prompt}]
+
+    return render_template("index.html", mode=session["mode"])
+
+@app.route("/set-mode", methods=["POST"])
+def set_mode():
+    data = request.json
+    mode = data.get("mode")
+
+    if mode not in ["tutor", "exam"]:
+        return jsonify({"status": "invalid mode"})
+
+    session["mode"] = mode
+    system_prompt = TUTOR_PROMPT if mode == "tutor" else EXAM_PROMPT
+    session["messages"] = [{"role": "system", "content": system_prompt}]
+
+    return jsonify({"status": "ok", "mode": mode})
 
 @app.route("/ask", methods=["POST"])
 def ask():
@@ -44,7 +70,7 @@ def ask():
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=messages,
-            temperature=0.7
+            temperature=0.6
         )
 
         answer = response["choices"][0]["message"]["content"]

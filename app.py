@@ -3,13 +3,14 @@ import os, time
 from openai import OpenAI
 
 app = Flask(__name__)
-app.secret_key = "opentutor-power-key"
+app.secret_key = "opentutor-final-lock-key"
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 MAX_MEMORY = 6
 RATE_LIMIT = 10
 RATE_WINDOW = 60
+MAX_QUESTION_LENGTH = 800  # safety limit
 
 
 def is_rate_limited():
@@ -34,29 +35,36 @@ def chat():
 
 @app.route("/ask", methods=["POST"])
 def ask():
+    # ---- Rate limit ----
     if is_rate_limited():
         return jsonify({
             "answer": "⏳ Thoda ruk jaiye. Aap bahut zyada request bhej rahe hain."
         })
 
     data = request.get_json(silent=True) or {}
-    question = (data.get("question") or "").strip()
+    raw_question = data.get("question") or ""
+    question = raw_question.strip()
     mode = data.get("mode", "tutor")
 
+    # ---- Input safety ----
     if not question:
         return jsonify({"answer": "❌ Kripya koi sawal likhiye."})
+
+    if len(question) > MAX_QUESTION_LENGTH:
+        return jsonify({
+            "answer": "⚠️ Sawal bahut lamba hai. Kripya thoda chhota karke poochiye."
+        })
 
     session.setdefault("chat", [])
     messages = []
 
+    # ---- Mode logic ----
     if mode == "exam":
         system_prompt = (
             "You are OpenTutor AI in STRICT EXAM MODE.\n"
-            "Rules:\n"
-            "- Answer only what is asked.\n"
-            "- Short, precise, exam-ready.\n"
-            "- Use bullet points if useful.\n"
-            "- No storytelling.\n"
+            "- Short, direct, exam-ready answers only.\n"
+            "- No extra explanation.\n"
+            "- Stay strictly on the question.\n"
         )
         max_tokens = 180
         temperature = 0.15
@@ -64,22 +72,23 @@ def ask():
     else:
         system_prompt = (
             "You are OpenTutor AI in ADVANCED TUTOR MODE.\n"
-            "Rules:\n"
             "- Explain step by step.\n"
-            "- Use headings or points if helpful.\n"
-            "- Give examples when needed.\n"
+            "- Use simple language.\n"
+            "- Give examples if useful.\n"
+            "- Use context from previous questions.\n"
             "- Stay strictly on topic.\n"
-            "- If user asks follow-up, use context.\n"
         )
         max_tokens = 520
         temperature = 0.30
         messages.append({"role": "system", "content": system_prompt})
 
+        # memory
         for m in session["chat"][-MAX_MEMORY:]:
             messages.append(m)
 
     messages.append({"role": "user", "content": question})
 
+    # ---- OpenAI call ----
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -93,6 +102,7 @@ def ask():
         if not answer:
             raise ValueError("Empty response")
 
+        # save memory (tutor only)
         if mode != "exam":
             session["chat"].append({"role": "user", "content": question})
             session["chat"].append({"role": "assistant", "content": answer})
@@ -102,7 +112,10 @@ def ask():
 
     except Exception:
         return jsonify({
-            "answer": "⚠️ Abhi system thoda busy hai. Kripya dobara try karein."
+            "answer": (
+                "⚠️ Abhi system thoda busy hai.\n"
+                "Kripya 10–20 second baad dobara try karein."
+            )
         })
 
 

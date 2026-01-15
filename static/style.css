@@ -1,97 +1,157 @@
+/* =========================
+   GLOBAL
+========================= */
+* {
+    box-sizing: border-box;
+}
+
 body {
     margin: 0;
-    padding: 0;
-    background: #f4f6f8;
-    font-family: Arial, sans-serif;
+    background: #f3f4f6;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
+/* =========================
+   APP CONTAINER
+========================= */
 .app-container {
     max-width: 900px;
-    margin: 20px auto;
+    margin: 0 auto;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
     background: #ffffff;
-    padding: 20px;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
+/* =========================
+   HEADER
+========================= */
 h1 {
     text-align: center;
-    margin-bottom: 15px;
+    padding: 12px;
+    margin: 0;
+    background: #1e293b;
+    color: #ffffff;
+    font-size: 20px;
 }
 
-/* CHAT BOX */
-#chat-box {
-    height: 420px;
-    overflow-y: auto;
+/* =========================
+   MODE BAR
+========================= */
+.mode-bar {
+    display: flex;
+    gap: 8px;
     padding: 10px;
-    background: #f1f1f1;
-    border-radius: 10px;
-    margin-bottom: 15px;
+    background: #e5e7eb;
+}
+
+.mode-bar button {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    cursor: pointer;
+    background: #cbd5f5;
+}
+
+.mode-bar button.active {
+    background: #2563eb;
+    color: white;
+}
+
+/* =========================
+   CHAT BOX
+========================= */
+#chat-box {
+    flex: 1;
+    padding: 12px;
+    overflow-y: auto;
+    background: #f8fafc;
 }
 
 /* USER MESSAGE */
 .user-msg {
-    background: #2563eb; /* BLUE */
-    color: #ffffff;
-    padding: 10px 14px;
-    border-radius: 14px;
-    margin: 8px 0;
-    max-width: 75%;
+    max-width: 80%;
     margin-left: auto;
-    text-align: left;
-    font-size: 15px;
-    line-height: 1.4;
+    margin-bottom: 10px;
+    padding: 10px 14px;
+    background: #2563eb;
+    color: white;
+    border-radius: 16px 16px 0 16px;
+    font-size: 14px;
+    line-height: 1.5;
+    word-wrap: break-word;
 }
 
 /* AI MESSAGE */
 .ai-msg {
-    background: #e5e7eb; /* LIGHT GREY */
-    color: #000000;
-    padding: 10px 14px;
-    border-radius: 14px;
-    margin: 8px 0;
-    max-width: 75%;
+    max-width: 80%;
     margin-right: auto;
-    text-align: left;
-    font-size: 15px;
-    line-height: 1.5;
+    margin-bottom: 10px;
+    padding: 10px 14px;
+    background: #e5e7eb;
+    color: #111827;
+    border-radius: 16px 16px 16px 0;
+    font-size: 14px;
+    line-height: 1.6;
+    word-wrap: break-word;
 }
 
-/* INPUT AREA */
+/* =========================
+   INPUT AREA
+========================= */
 .input-area {
     display: flex;
-    gap: 10px;
-    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: #ffffff;
+    border-top: 1px solid #e5e7eb;
 }
 
 textarea {
     flex: 1;
-    padding: 10px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
     resize: none;
+    padding: 10px;
     font-size: 14px;
+    border-radius: 8px;
+    border: 1px solid #cbd5f5;
+    outline: none;
 }
 
-/* BUTTONS */
-button {
-    padding: 10px 14px;
+textarea:focus {
+    border-color: #2563eb;
+}
+
+/* BUTTON */
+.input-area button {
+    padding: 0 16px;
     border-radius: 8px;
     border: none;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-button:hover {
-    opacity: 0.9;
-}
-
-button:first-of-type {
     background: #22c55e;
-    color: #ffffff;
+    color: white;
+    font-size: 14px;
+    cursor: pointer;
 }
 
-button:last-of-type {
-    background: #ef4444;
-    color: #ffffff;
+/* =========================
+   MOBILE OPTIMIZATION
+========================= */
+@media (max-width: 600px) {
+    .app-container {
+        height: 100vh;
+    }
+
+    h1 {
+        font-size: 18px;
+    }
+
+    textarea {
+        font-size: 13px;
+    }
+
+    .user-msg,
+    .ai-msg {
+        font-size: 13px;
+    }
 }

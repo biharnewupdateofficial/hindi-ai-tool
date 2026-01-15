@@ -10,79 +10,94 @@
 <div class="app-container">
     <h1>🤖 OpenTutor AI</h1>
 
+    <div class="mode-bar">
+        <button id="tutorBtn" class="active">🧠 Tutor</button>
+        <button id="examBtn">📝 Exam</button>
+        <button onclick="clearChat()">🧹 New Chat</button>
+    </div>
+
     <div id="chat-box"></div>
 
     <div class="input-area">
-        <textarea
-            id="question"
-            placeholder="Apna sawal yahan likhiye..."
-            rows="2"
-        ></textarea>
-
+        <textarea id="question" placeholder="Apna sawal yahan likhiye..."></textarea>
         <button onclick="sendQuestion()">Send</button>
-        <button onclick="clearChat()">🧹 New Chat</button>
     </div>
 </div>
 
 <script>
+let mode = "tutor";
+
 const chatBox = document.getElementById("chat-box");
 const input = document.getElementById("question");
+const tutorBtn = document.getElementById("tutorBtn");
+const examBtn = document.getElementById("examBtn");
 
-// Load saved chat
+/* Load old chat */
 window.onload = () => {
     const savedChat = localStorage.getItem("opentutor_chat");
     if (savedChat) chatBox.innerHTML = savedChat;
 };
 
-function addMessage(text, sender) {
+/* Mode switch */
+tutorBtn.onclick = () => {
+    mode = "tutor";
+    tutorBtn.classList.add("active");
+    examBtn.classList.remove("active");
+};
+
+examBtn.onclick = () => {
+    mode = "exam";
+    examBtn.classList.add("active");
+    tutorBtn.classList.remove("active");
+};
+
+/* Add message */
+function addMessage(text, sender, typing=false) {
     const msg = document.createElement("div");
     msg.className = sender === "user" ? "user-msg" : "ai-msg";
-    msg.innerText = text;
+
+    if (typing) {
+        msg.id = "typing";
+        msg.innerText = text;
+    } else {
+        msg.innerHTML = text.replace(/\n/g, "<br>");
+    }
+
     chatBox.appendChild(msg);
     chatBox.scrollTop = chatBox.scrollHeight;
     localStorage.setItem("opentutor_chat", chatBox.innerHTML);
 }
 
-function showTyping() {
-    const typing = document.createElement("div");
-    typing.className = "ai-msg";
-    typing.id = "typing";
-    typing.innerText = "OpenTutor AI likh raha hai...";
-    chatBox.appendChild(typing);
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-
-function removeTyping() {
-    const typing = document.getElementById("typing");
-    if (typing) typing.remove();
-}
-
+/* Send question */
 function sendQuestion() {
     const question = input.value.trim();
     if (!question) return;
 
     addMessage(question, "user");
     input.value = "";
+    input.focus();
 
-    showTyping();
+    addMessage("OpenTutor AI likh raha hai...", "ai", true);
 
     fetch("/ask", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question })
+        body: JSON.stringify({ question, mode })
     })
     .then(res => res.json())
     .then(data => {
-        removeTyping();
+        const typing = document.getElementById("typing");
+        if (typing) typing.remove();
         addMessage(data.answer, "ai");
     })
     .catch(() => {
-        removeTyping();
-        addMessage("❌ Server error. Please try again.", "ai");
+        const typing = document.getElementById("typing");
+        if (typing) typing.remove();
+        addMessage("❌ Error aaya, dobara try karein", "ai");
     });
 }
 
-// ENTER = send, SHIFT+ENTER = new line
+/* Enter = send */
 input.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -90,7 +105,7 @@ input.addEventListener("keydown", e => {
     }
 });
 
-// New Chat
+/* Clear chat */
 function clearChat() {
     chatBox.innerHTML = "";
     localStorage.removeItem("opentutor_chat");

@@ -1,9 +1,9 @@
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 import os, time
 from openai import OpenAI
 
 app = Flask(__name__)
-app.secret_key = "opentutor-performance-key"
+app.secret_key = "opentutor-launch-key"
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -22,8 +22,15 @@ def is_rate_limited():
     return False
 
 
+# ---------- LANDING PAGE ----------
 @app.route("/")
-def index():
+def landing():
+    return render_template("landing.html")
+
+
+# ---------- CHAT PAGE ----------
+@app.route("/chat")
+def chat():
     return render_template("index.html")
 
 
@@ -47,8 +54,7 @@ def ask():
     if mode == "exam":
         system_prompt = (
             "You are in EXAM MODE.\n"
-            "- Answer in short, direct form.\n"
-            "- Exam ready.\n"
+            "- Short, direct, exam-ready answers.\n"
             "- No extra explanation.\n"
         )
         max_tokens = 180
@@ -57,9 +63,10 @@ def ask():
     else:
         system_prompt = (
             "You are OpenTutor AI in TUTOR MODE.\n"
-            "- Explain clearly step by step.\n"
+            "- Explain step by step.\n"
             "- Stay on topic.\n"
             "- Use simple language.\n"
+            "- Remember context.\n"
         )
         max_tokens = 500
         temperature = 0.35
@@ -81,7 +88,7 @@ def ask():
 
         answer = response.choices[0].message.content.strip()
         if not answer:
-            raise ValueError("Empty response")
+            raise ValueError("Empty")
 
         if mode != "exam":
             session["chat"].append({"role": "user", "content": question})
@@ -92,7 +99,7 @@ def ask():
 
     except Exception:
         return jsonify({
-            "answer": "⚠️ Abhi system busy hai. Kripya thodi der baad try karein."
+            "answer": "⚠️ Abhi system busy hai. Thodi der baad try karein."
         })
 
 

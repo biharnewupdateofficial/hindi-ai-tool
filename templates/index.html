@@ -25,89 +25,72 @@
 </div>
 
 <script>
-/* =========================
-   ELEMENTS
-========================= */
 const chatBox = document.getElementById("chat-box");
 const input = document.getElementById("question");
 
-/* =========================
-   LOAD OLD CHAT
-========================= */
+// Load saved chat
 window.onload = () => {
     const savedChat = localStorage.getItem("opentutor_chat");
-    if (savedChat) {
-        chatBox.innerHTML = savedChat;
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
+    if (savedChat) chatBox.innerHTML = savedChat;
 };
 
-/* =========================
-   ADD MESSAGE
-========================= */
-function addMessage(text, sender, typing=false) {
+function addMessage(text, sender) {
     const msg = document.createElement("div");
     msg.className = sender === "user" ? "user-msg" : "ai-msg";
-
-    // IMPORTANT: line breaks fix
-    msg.innerHTML = text.replace(/\n/g, "<br>");
-
-    if (typing) msg.id = "typing";
-
+    msg.innerText = text;
     chatBox.appendChild(msg);
     chatBox.scrollTop = chatBox.scrollHeight;
-
     localStorage.setItem("opentutor_chat", chatBox.innerHTML);
 }
 
-/* =========================
-   SEND QUESTION
-========================= */
+function showTyping() {
+    const typing = document.createElement("div");
+    typing.className = "ai-msg";
+    typing.id = "typing";
+    typing.innerText = "OpenTutor AI likh raha hai...";
+    chatBox.appendChild(typing);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function removeTyping() {
+    const typing = document.getElementById("typing");
+    if (typing) typing.remove();
+}
+
 function sendQuestion() {
     const question = input.value.trim();
     if (!question) return;
 
     addMessage(question, "user");
     input.value = "";
-    input.focus();
 
-    addMessage("OpenTutor AI likh raha hai...", "ai", true);
+    showTyping();
 
     fetch("/ask", {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ question })
     })
     .then(res => res.json())
     .then(data => {
-        const typing = document.getElementById("typing");
-        if (typing) typing.remove();
-
-        addMessage(data.answer || "⚠️ Koi jawab nahi mila", "ai");
+        removeTyping();
+        addMessage(data.answer, "ai");
     })
     .catch(() => {
-        const typing = document.getElementById("typing");
-        if (typing) typing.remove();
-
-        addMessage("❌ Server error aaya, dobara try karein", "ai");
+        removeTyping();
+        addMessage("❌ Server error. Please try again.", "ai");
     });
 }
 
-/* =========================
-   ENTER KEY SUPPORT
-========================= */
-input.addEventListener("keydown", function(e) {
+// ENTER = send, SHIFT+ENTER = new line
+input.addEventListener("keydown", e => {
     if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         sendQuestion();
     }
 });
 
-/* =========================
-   CLEAR CHAT
-========================= */
+// New Chat
 function clearChat() {
     chatBox.innerHTML = "";
     localStorage.removeItem("opentutor_chat");

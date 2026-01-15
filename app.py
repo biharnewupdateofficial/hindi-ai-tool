@@ -1,10 +1,9 @@
 from flask import Flask, render_template, request, jsonify, session
-import os
-import time
+import os, time
 from openai import OpenAI
 
 app = Flask(__name__)
-app.secret_key = "opentutor-final-safe-key"
+app.secret_key = "opentutor-performance-key"
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -30,10 +29,9 @@ def index():
 
 @app.route("/ask", methods=["POST"])
 def ask():
-    # Rate limit
     if is_rate_limited():
         return jsonify({
-            "answer": "⏳ Aap bahut zyada request bhej rahe hain. 1 minute ruk kar try karein."
+            "answer": "⏳ Thoda ruk jaiye. Aap bahut zyada request bhej rahe hain."
         })
 
     data = request.get_json(silent=True) or {}
@@ -41,7 +39,7 @@ def ask():
     mode = data.get("mode", "tutor")
 
     if not question:
-        return jsonify({"answer": "❌ Sawal khali hai. Kripya kuch likhiye."})
+        return jsonify({"answer": "❌ Kripya koi sawal likhiye."})
 
     session.setdefault("chat", [])
     messages = []
@@ -49,19 +47,24 @@ def ask():
     if mode == "exam":
         system_prompt = (
             "You are in EXAM MODE.\n"
-            "- Short, direct, exam-ready answers.\n"
+            "- Answer in short, direct form.\n"
+            "- Exam ready.\n"
             "- No extra explanation.\n"
         )
+        max_tokens = 180
+        temperature = 0.2
         messages.append({"role": "system", "content": system_prompt})
     else:
         system_prompt = (
             "You are OpenTutor AI in TUTOR MODE.\n"
-            "- Explain step by step.\n"
-            "- Stay strictly on topic.\n"
-            "- Remember conversation context.\n"
-            "- Reply in user's language.\n"
+            "- Explain clearly step by step.\n"
+            "- Stay on topic.\n"
+            "- Use simple language.\n"
         )
+        max_tokens = 500
+        temperature = 0.35
         messages.append({"role": "system", "content": system_prompt})
+
         for m in session["chat"][-MAX_MEMORY:]:
             messages.append(m)
 
@@ -71,15 +74,14 @@ def ask():
         response = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
-            temperature=0.4,
-            max_tokens=600,
-            timeout=25
+            temperature=temperature,
+            max_tokens=max_tokens,
+            timeout=20
         )
 
         answer = response.choices[0].message.content.strip()
-
         if not answer:
-            raise ValueError("Empty AI response")
+            raise ValueError("Empty response")
 
         if mode != "exam":
             session["chat"].append({"role": "user", "content": question})
@@ -89,13 +91,9 @@ def ask():
         return jsonify({"answer": answer})
 
     except Exception:
-        # FINAL FALLBACK (never blank)
-        fallback = (
-            "⚠️ Abhi thodi technical dikkat aa rahi hai.\n"
-            "Kripya 10–20 second baad dobara try karein.\n\n"
-            "Aapka sawal safe hai 👍"
-        )
-        return jsonify({"answer": fallback})
+        return jsonify({
+            "answer": "⚠️ Abhi system busy hai. Kripya thodi der baad try karein."
+        })
 
 
 @app.route("/clear", methods=["POST"])

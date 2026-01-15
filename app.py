@@ -1,9 +1,9 @@
-from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template, request, jsonify, session
 import os, time
 from openai import OpenAI
 
 app = Flask(__name__)
-app.secret_key = "opentutor-launch-key"
+app.secret_key = "opentutor-power-key"
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -22,13 +22,11 @@ def is_rate_limited():
     return False
 
 
-# ---------- LANDING PAGE ----------
 @app.route("/")
 def landing():
     return render_template("landing.html")
 
 
-# ---------- CHAT PAGE ----------
 @app.route("/chat")
 def chat():
     return render_template("index.html")
@@ -53,23 +51,28 @@ def ask():
 
     if mode == "exam":
         system_prompt = (
-            "You are in EXAM MODE.\n"
-            "- Short, direct, exam-ready answers.\n"
-            "- No extra explanation.\n"
+            "You are OpenTutor AI in STRICT EXAM MODE.\n"
+            "Rules:\n"
+            "- Answer only what is asked.\n"
+            "- Short, precise, exam-ready.\n"
+            "- Use bullet points if useful.\n"
+            "- No storytelling.\n"
         )
         max_tokens = 180
-        temperature = 0.2
+        temperature = 0.15
         messages.append({"role": "system", "content": system_prompt})
     else:
         system_prompt = (
-            "You are OpenTutor AI in TUTOR MODE.\n"
+            "You are OpenTutor AI in ADVANCED TUTOR MODE.\n"
+            "Rules:\n"
             "- Explain step by step.\n"
-            "- Stay on topic.\n"
-            "- Use simple language.\n"
-            "- Remember context.\n"
+            "- Use headings or points if helpful.\n"
+            "- Give examples when needed.\n"
+            "- Stay strictly on topic.\n"
+            "- If user asks follow-up, use context.\n"
         )
-        max_tokens = 500
-        temperature = 0.35
+        max_tokens = 520
+        temperature = 0.30
         messages.append({"role": "system", "content": system_prompt})
 
         for m in session["chat"][-MAX_MEMORY:]:
@@ -88,7 +91,7 @@ def ask():
 
         answer = response.choices[0].message.content.strip()
         if not answer:
-            raise ValueError("Empty")
+            raise ValueError("Empty response")
 
         if mode != "exam":
             session["chat"].append({"role": "user", "content": question})
@@ -99,7 +102,7 @@ def ask():
 
     except Exception:
         return jsonify({
-            "answer": "⚠️ Abhi system busy hai. Thodi der baad try karein."
+            "answer": "⚠️ Abhi system thoda busy hai. Kripya dobara try karein."
         })
 
 

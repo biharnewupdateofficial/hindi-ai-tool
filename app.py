@@ -3,8 +3,12 @@ import os
 from openai import OpenAI
 
 app = Flask(__name__)
-
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+
+def detect_language(text):
+    # very simple & effective
+    hindi_chars = sum(1 for c in text if '\u0900' <= c <= '\u097F')
+    return "hindi" if hindi_chars > 5 else "english"
 
 @app.route("/")
 def index():
@@ -19,18 +23,25 @@ def ask():
     if not question:
         return jsonify({"answer": "❌ Please enter a question."})
 
+    lang = detect_language(question)
+
     if mode == "exam":
         system_prompt = (
-            "You are an exam-focused AI tutor. "
-            "Answer briefly, clearly, and to the point. "
-            "Do not add extra explanation or conversation."
+            "You are an EXAM MODE AI.\n"
+            "- Short, direct answers\n"
+            "- No extra explanation\n"
         )
     else:
         system_prompt = (
-            "You are a friendly AI tutor. "
-            "Explain step by step in simple Hindi + English mix. "
-            "Use examples if helpful."
+            "You are a TUTOR MODE AI.\n"
+            "- Explain step by step\n"
+            "- Friendly tone\n"
         )
+
+    if lang == "hindi":
+        system_prompt += "Reply in Hindi or Hinglish.\n"
+    else:
+        system_prompt += "Reply in simple English.\n"
 
     try:
         response = client.chat.completions.create(
@@ -39,7 +50,7 @@ def ask():
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": question}
             ],
-            temperature=0.4,
+            temperature=0.3,
             max_tokens=500
         )
 

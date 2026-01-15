@@ -4,7 +4,6 @@ from openai import OpenAI
 
 app = Flask(__name__)
 
-# OpenAI client (NEW API)
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 @app.route("/")
@@ -15,22 +14,22 @@ def index():
 def ask():
     data = request.get_json()
     question = data.get("question", "").strip()
-    mode = data.get("mode", "tutor")  # default tutor
+    mode = data.get("mode", "tutor")
 
     if not question:
         return jsonify({"answer": "❌ Please enter a question."})
 
     if mode == "exam":
         system_prompt = (
-            "You are an exam assistant. "
-            "Give short, direct, exam-ready answers. "
-            "No extra explanation."
+            "You are an exam-focused AI tutor. "
+            "Answer briefly, clearly, and to the point. "
+            "Do not add extra explanation or conversation."
         )
     else:
         system_prompt = (
-            "You are a tutor. "
-            "Explain step-by-step in simple Hindi-English mix. "
-            "Use examples and clarity."
+            "You are a friendly AI tutor. "
+            "Explain step by step in simple Hindi + English mix. "
+            "Use examples if helpful."
         )
 
     try:
@@ -39,7 +38,9 @@ def ask():
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": question}
-            ]
+            ],
+            temperature=0.4,
+            max_tokens=500
         )
 
         answer = response.choices[0].message.content.strip()
@@ -49,4 +50,4 @@ def ask():
         return jsonify({"answer": f"❌ AI Error: {str(e)}"})
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=10000)
+    app.run(debug=True)

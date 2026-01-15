@@ -3,14 +3,15 @@ import os, time
 from openai import OpenAI
 
 app = Flask(__name__)
-app.secret_key = "opentutor-final-lock-key"
+app.secret_key = "opentutor-chatgpt-gemini-final"
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-MAX_MEMORY = 6
+# --------- Limits & Safety ----------
 RATE_LIMIT = 10
 RATE_WINDOW = 60
-MAX_QUESTION_LENGTH = 800  # safety limit
+MAX_MEMORY = 8
+MAX_QUESTION_LENGTH = 800
 
 
 def is_rate_limited():
@@ -35,10 +36,10 @@ def chat():
 
 @app.route("/ask", methods=["POST"])
 def ask():
-    # ---- Rate limit ----
+    # ---------- Rate limit ----------
     if is_rate_limited():
         return jsonify({
-            "answer": "⏳ Thoda ruk jaiye. Aap bahut zyada request bhej rahe hain."
+            "answer": "⏳ थोड़ा रुक जाइए, आप बहुत तेज़ सवाल भेज रहे हैं।"
         })
 
     data = request.get_json(silent=True) or {}
@@ -46,49 +47,61 @@ def ask():
     question = raw_question.strip()
     mode = data.get("mode", "tutor")
 
-    # ---- Input safety ----
+    # ---------- Input safety ----------
     if not question:
-        return jsonify({"answer": "❌ Kripya koi sawal likhiye."})
+        return jsonify({"answer": "❌ कृपया कोई सवाल लिखिए।"})
 
     if len(question) > MAX_QUESTION_LENGTH:
         return jsonify({
-            "answer": "⚠️ Sawal bahut lamba hai. Kripya thoda chhota karke poochiye."
+            "answer": "⚠️ सवाल थोड़ा ज़्यादा लंबा है, कृपया छोटा करके पूछिए।"
         })
 
     session.setdefault("chat", [])
     messages = []
 
-    # ---- Mode logic ----
+    # ---------- CORE BRAIN (ChatGPT + Gemini style) ----------
     if mode == "exam":
-        system_prompt = (
-            "You are OpenTutor AI in STRICT EXAM MODE.\n"
-            "- Short, direct, exam-ready answers only.\n"
-            "- No extra explanation.\n"
-            "- Stay strictly on the question.\n"
-        )
-        max_tokens = 180
+        system_prompt = """
+You are OpenTutor AI in STRICT EXAM MODE.
+
+Rules:
+- Give only the exact answer asked.
+- Short, crisp, exam-ready.
+- No extra explanation.
+- No options unless asked.
+- No conversation.
+"""
         temperature = 0.15
-        messages.append({"role": "system", "content": system_prompt})
-    else:
-        system_prompt = (
-            "You are OpenTutor AI in ADVANCED TUTOR MODE.\n"
-            "- Explain step by step.\n"
-            "- Use simple language.\n"
-            "- Give examples if useful.\n"
-            "- Use context from previous questions.\n"
-            "- Stay strictly on topic.\n"
-        )
-        max_tokens = 520
-        temperature = 0.30
+        max_tokens = 180
         messages.append({"role": "system", "content": system_prompt})
 
-        # memory
+    else:
+        system_prompt = """
+You are OpenTutor AI with ChatGPT + Gemini style intelligence.
+
+Your behavior:
+- Talk like a helpful human tutor.
+- If the question is unclear or too broad, ASK A CLARIFYING QUESTION instead of guessing.
+- If multiple meanings are possible, give clear OPTIONS (numbered).
+- Understand follow-up questions using conversation context.
+- Explain simply, step-by-step.
+- Use Hindi / Hinglish / English based on user's language.
+- Stay strictly on topic.
+- Do NOT hallucinate facts.
+- Do NOT over-explain unless needed.
+"""
+        temperature = 0.35
+        max_tokens = 520
+        messages.append({"role": "system", "content": system_prompt})
+
+        # conversation memory
         for m in session["chat"][-MAX_MEMORY:]:
             messages.append(m)
 
+    # user message
     messages.append({"role": "user", "content": question})
 
-    # ---- OpenAI call ----
+    # ---------- AI Call ----------
     try:
         response = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -102,7 +115,7 @@ def ask():
         if not answer:
             raise ValueError("Empty response")
 
-        # save memory (tutor only)
+        # save memory only in tutor mode
         if mode != "exam":
             session["chat"].append({"role": "user", "content": question})
             session["chat"].append({"role": "assistant", "content": answer})
@@ -113,8 +126,8 @@ def ask():
     except Exception:
         return jsonify({
             "answer": (
-                "⚠️ Abhi system thoda busy hai.\n"
-                "Kripya 10–20 second baad dobara try karein."
+                "⚠️ अभी सिस्टम थोड़ा व्यस्त है।\n"
+                "कृपया 10–20 सेकंड बाद फिर से कोशिश करें।"
             )
         })
 

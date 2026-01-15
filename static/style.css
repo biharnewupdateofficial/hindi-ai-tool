@@ -1,157 +1,85 @@
-/* =========================
-   GLOBAL
-========================= */
-* {
-    box-sizing: border-box;
-}
-
 body {
     margin: 0;
-    background: #f3f4f6;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: "Segoe UI", Arial, sans-serif;
+    background: #f5f6fa;
 }
 
-/* =========================
-   APP CONTAINER
-========================= */
 .app-container {
     max-width: 900px;
-    margin: 0 auto;
+    margin: auto;
     height: 100vh;
     display: flex;
     flex-direction: column;
+}
+
+header {
     background: #ffffff;
+    padding: 12px 20px;
+    font-size: 22px;
+    font-weight: bold;
+    border-bottom: 1px solid #ddd;
 }
 
-/* =========================
-   HEADER
-========================= */
-h1 {
-    text-align: center;
-    padding: 12px;
-    margin: 0;
-    background: #1e293b;
-    color: #ffffff;
-    font-size: 20px;
-}
-
-/* =========================
-   MODE BAR
-========================= */
-.mode-bar {
-    display: flex;
-    gap: 8px;
-    padding: 10px;
-    background: #e5e7eb;
-}
-
-.mode-bar button {
-    flex: 1;
-    padding: 10px;
-    border: none;
-    border-radius: 8px;
-    font-size: 14px;
-    cursor: pointer;
-    background: #cbd5f5;
-}
-
-.mode-bar button.active {
-    background: #2563eb;
-    color: white;
-}
-
-/* =========================
-   CHAT BOX
-========================= */
 #chat-box {
     flex: 1;
-    padding: 12px;
     overflow-y: auto;
-    background: #f8fafc;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
 
 /* USER MESSAGE */
 .user-msg {
-    max-width: 80%;
-    margin-left: auto;
-    margin-bottom: 10px;
-    padding: 10px 14px;
+    align-self: flex-end;
     background: #2563eb;
     color: white;
-    border-radius: 16px 16px 0 16px;
-    font-size: 14px;
-    line-height: 1.5;
-    word-wrap: break-word;
+    padding: 12px 16px;
+    border-radius: 18px 18px 4px 18px;
+    max-width: 75%;
+    font-size: 15px;
 }
 
 /* AI MESSAGE */
 .ai-msg {
-    max-width: 80%;
-    margin-right: auto;
-    margin-bottom: 10px;
-    padding: 10px 14px;
+    align-self: flex-start;
     background: #e5e7eb;
     color: #111827;
-    border-radius: 16px 16px 16px 0;
-    font-size: 14px;
-    line-height: 1.6;
-    word-wrap: break-word;
+    padding: 12px 16px;
+    border-radius: 18px 18px 18px 4px;
+    max-width: 75%;
+    font-size: 15px;
+    line-height: 1.5;
 }
 
-/* =========================
-   INPUT AREA
-========================= */
 .input-area {
     display: flex;
-    gap: 8px;
-    padding: 10px;
+    gap: 10px;
+    padding: 15px;
+    border-top: 1px solid #ddd;
     background: #ffffff;
-    border-top: 1px solid #e5e7eb;
 }
 
 textarea {
     flex: 1;
     resize: none;
-    padding: 10px;
-    font-size: 14px;
+    padding: 12px;
+    font-size: 15px;
     border-radius: 8px;
-    border: 1px solid #cbd5f5;
+    border: 1px solid #ccc;
     outline: none;
 }
 
-textarea:focus {
-    border-color: #2563eb;
-}
-
-/* BUTTON */
-.input-area button {
-    padding: 0 16px;
-    border-radius: 8px;
-    border: none;
+button {
     background: #22c55e;
+    border: none;
     color: white;
-    font-size: 14px;
+    padding: 0 18px;
+    font-size: 15px;
+    border-radius: 8px;
     cursor: pointer;
 }
 
-/* =========================
-   MOBILE OPTIMIZATION
-========================= */
-@media (max-width: 600px) {
-    .app-container {
-        height: 100vh;
-    }
-
-    h1 {
-        font-size: 18px;
-    }
-
-    textarea {
-        font-size: 13px;
-    }
-
-    .user-msg,
-    .ai-msg {
-        font-size: 13px;
-    }
+button:hover {
+    background: #16a34a;
 }

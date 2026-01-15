@@ -4,29 +4,21 @@ import time
 from openai import OpenAI
 
 app = Flask(__name__)
-app.secret_key = "opentutor-secure-key"
+app.secret_key = "opentutor-final-safe-key"
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 MAX_MEMORY = 6
-RATE_LIMIT = 10          # requests
-RATE_WINDOW = 60         # seconds
+RATE_LIMIT = 10
+RATE_WINDOW = 60
 
 
 def is_rate_limited():
     now = time.time()
-
-    if "requests" not in session:
-        session["requests"] = []
-
-    # Remove old timestamps
-    session["requests"] = [
-        t for t in session["requests"] if now - t < RATE_WINDOW
-    ]
-
+    session.setdefault("requests", [])
+    session["requests"] = [t for t in session["requests"] if now - t < RATE_WINDOW]
     if len(session["requests"]) >= RATE_LIMIT:
         return True
-
     session["requests"].append(now)
     return False
 
@@ -38,21 +30,20 @@ def index():
 
 @app.route("/ask", methods=["POST"])
 def ask():
+    # Rate limit
     if is_rate_limited():
         return jsonify({
-            "answer": "⏳ Thoda ruk jaiye. Aap bahut zyada request bhej rahe hain."
+            "answer": "⏳ Aap bahut zyada request bhej rahe hain. 1 minute ruk kar try karein."
         })
 
-    data = request.get_json()
-    question = data.get("question", "").strip()
+    data = request.get_json(silent=True) or {}
+    question = (data.get("question") or "").strip()
     mode = data.get("mode", "tutor")
 
     if not question:
-        return jsonify({"answer": "❌ Please enter a question."})
+        return jsonify({"answer": "❌ Sawal khali hai. Kripya kuch likhiye."})
 
-    if "chat" not in session:
-        session["chat"] = []
-
+    session.setdefault("chat", [])
     messages = []
 
     if mode == "exam":
@@ -66,12 +57,11 @@ def ask():
         system_prompt = (
             "You are OpenTutor AI in TUTOR MODE.\n"
             "- Explain step by step.\n"
-            "- Stay on topic.\n"
+            "- Stay strictly on topic.\n"
             "- Remember conversation context.\n"
             "- Reply in user's language.\n"
         )
         messages.append({"role": "system", "content": system_prompt})
-
         for m in session["chat"][-MAX_MEMORY:]:
             messages.append(m)
 
@@ -82,10 +72,14 @@ def ask():
             model="gpt-4o-mini",
             messages=messages,
             temperature=0.4,
-            max_tokens=600
+            max_tokens=600,
+            timeout=25
         )
 
         answer = response.choices[0].message.content.strip()
+
+        if not answer:
+            raise ValueError("Empty AI response")
 
         if mode != "exam":
             session["chat"].append({"role": "user", "content": question})
@@ -95,9 +89,13 @@ def ask():
         return jsonify({"answer": answer})
 
     except Exception:
-        return jsonify({
-            "answer": "⚠️ Server busy hai. Thodi der baad try karein."
-        })
+        # FINAL FALLBACK (never blank)
+        fallback = (
+            "⚠️ Abhi thodi technical dikkat aa rahi hai.\n"
+            "Kripya 10–20 second baad dobara try karein.\n\n"
+            "Aapka sawal safe hai 👍"
+        )
+        return jsonify({"answer": fallback})
 
 
 @app.route("/clear", methods=["POST"])

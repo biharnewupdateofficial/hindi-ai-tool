@@ -1,67 +1,97 @@
 body {
     margin: 0;
-    font-family: Arial, sans-serif;
+    padding: 0;
     background: #f4f6f8;
+    font-family: Arial, sans-serif;
 }
 
-.top-bar {
-    display: flex;
-    gap: 10px;
-    padding: 10px;
-    background: #1e293b;
+.app-container {
+    max-width: 900px;
+    margin: 20px auto;
+    background: #ffffff;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 }
 
-.top-bar button {
-    background: #3b82f6;
-    color: white;
-    border: none;
-    padding: 8px 14px;
-    border-radius: 6px;
-    cursor: pointer;
+h1 {
+    text-align: center;
+    margin-bottom: 15px;
 }
 
-.chat-container {
-    padding: 15px;
-    height: 70vh;
+/* CHAT BOX */
+#chat-box {
+    height: 420px;
     overflow-y: auto;
-}
-
-.user {
-    background: #2563eb;
-    color: white;
     padding: 10px;
+    background: #f1f1f1;
     border-radius: 10px;
-    margin: 8px 0;
-    max-width: 80%;
-    align-self: flex-end;
+    margin-bottom: 15px;
 }
 
-.ai {
-    background: #e5e7eb;
-    padding: 10px;
-    border-radius: 10px;
+/* USER MESSAGE */
+.user-msg {
+    background: #2563eb; /* BLUE */
+    color: #ffffff;
+    padding: 10px 14px;
+    border-radius: 14px;
     margin: 8px 0;
-    max-width: 80%;
+    max-width: 75%;
+    margin-left: auto;
+    text-align: left;
+    font-size: 15px;
+    line-height: 1.4;
 }
 
+/* AI MESSAGE */
+.ai-msg {
+    background: #e5e7eb; /* LIGHT GREY */
+    color: #000000;
+    padding: 10px 14px;
+    border-radius: 14px;
+    margin: 8px 0;
+    max-width: 75%;
+    margin-right: auto;
+    text-align: left;
+    font-size: 15px;
+    line-height: 1.5;
+}
+
+/* INPUT AREA */
 .input-area {
     display: flex;
-    padding: 10px;
     gap: 10px;
-    background: white;
+    align-items: center;
 }
 
 textarea {
     flex: 1;
-    height: 60px;
     padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    resize: none;
+    font-size: 14px;
 }
 
-.input-area button {
-    background: #22c55e;
-    color: white;
+/* BUTTONS */
+button {
+    padding: 10px 14px;
+    border-radius: 8px;
     border: none;
-    padding: 10px 16px;
-    border-radius: 6px;
     cursor: pointer;
+    font-size: 14px;
+}
+
+button:hover {
+    opacity: 0.9;
+}
+
+button:first-of-type {
+    background: #22c55e;
+    color: #ffffff;
+}
+
+button:last-of-type {
+    background: #ef4444;
+    color: #ffffff;
 }

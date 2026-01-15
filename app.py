@@ -1,141 +1,163 @@
-from flask import Flask, render_template, request, jsonify, session
-import os, time
+from flask import Flask, render_template, request, jsonify, session, redirect, url_for
+import sqlite3, os, time, hashlib
 from openai import OpenAI
 
 app = Flask(__name__)
-app.secret_key = "opentutor-chatgpt-gemini-final"
+app.secret_key = "opentutor-login-final"
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
-# --------- Limits & Safety ----------
-RATE_LIMIT = 10
-RATE_WINDOW = 60
-MAX_MEMORY = 8
-MAX_QUESTION_LENGTH = 800
+# ------------------ DB SETUP ------------------
+def get_db():
+    conn = sqlite3.connect("users.db")
+    conn.row_factory = sqlite3.Row
+    return conn
 
+with get_db() as db:
+    db.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email TEXT UNIQUE,
+        password TEXT
+    )
+    """)
+    db.commit()
 
-def is_rate_limited():
-    now = time.time()
-    session.setdefault("requests", [])
-    session["requests"] = [t for t in session["requests"] if now - t < RATE_WINDOW]
-    if len(session["requests"]) >= RATE_LIMIT:
-        return True
-    session["requests"].append(now)
-    return False
+# ------------------ HELPERS ------------------
+def hash_password(p):
+    return hashlib.sha256(p.encode()).hexdigest()
 
+def is_logged_in():
+    return "user_id" in session
+
+# ------------------ ROUTES ------------------
 
 @app.route("/")
-def landing():
-    return render_template("landing.html")
+def home():
+    if is_logged_in():
+        return redirect("/chat")
+    return render_template("welcome.html")
+
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        email = request.form.get("email","").strip()
+        password = request.form.get("password","").strip()
+
+        if not email or not password:
+            return render_template("login.html", error="सभी फ़ील्ड भरना ज़रूरी है")
+
+        db = get_db()
+        user = db.execute(
+            "SELECT * FROM users WHERE email=? AND password=?",
+            (email, hash_password(password))
+        ).fetchone()
+
+        if user:
+            session["user_id"] = user["id"]
+            session["chat"] = []
+            return redirect("/chat")
+
+        return render_template("login.html", error="गलत Email या Password")
+
+    return render_template("login.html")
+
+
+@app.route("/signup", methods=["POST"])
+def signup():
+    email = request.form.get("email","").strip()
+    password = request.form.get("password","").strip()
+
+    if not email or not password:
+        return render_template("login.html", error="सभी फ़ील्ड भरना ज़रूरी है")
+
+    try:
+        db = get_db()
+        db.execute(
+            "INSERT INTO users (email,password) VALUES (?,?)",
+            (email, hash_password(password))
+        )
+        db.commit()
+        return render_template("login.html", success="Account बन गया, अब Login करें")
+
+    except:
+        return render_template("login.html", error="Email पहले से मौजूद है")
+
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
 
 
 @app.route("/chat")
 def chat():
+    if not is_logged_in():
+        return redirect("/login")
     return render_template("index.html")
+
+
+# ------------------ AI CHAT ------------------
+
+RATE_LIMIT = 10
+RATE_WINDOW = 60
+
+def is_rate_limited():
+    now = time.time()
+    session.setdefault("req", [])
+    session["req"] = [t for t in session["req"] if now - t < RATE_WINDOW]
+    if len(session["req"]) >= RATE_LIMIT:
+        return True
+    session["req"].append(now)
+    return False
 
 
 @app.route("/ask", methods=["POST"])
 def ask():
-    # ---------- Rate limit ----------
+    if not is_logged_in():
+        return jsonify({"answer":"⚠️ कृपया Login करें"})
+
     if is_rate_limited():
-        return jsonify({
-            "answer": "⏳ थोड़ा रुक जाइए, आप बहुत तेज़ सवाल भेज रहे हैं।"
-        })
+        return jsonify({"answer":"⏳ थोड़ा रुकिए"})
 
-    data = request.get_json(silent=True) or {}
-    raw_question = data.get("question") or ""
-    question = raw_question.strip()
-    mode = data.get("mode", "tutor")
-
-    # ---------- Input safety ----------
-    if not question:
-        return jsonify({"answer": "❌ कृपया कोई सवाल लिखिए।"})
-
-    if len(question) > MAX_QUESTION_LENGTH:
-        return jsonify({
-            "answer": "⚠️ सवाल थोड़ा ज़्यादा लंबा है, कृपया छोटा करके पूछिए।"
-        })
+    q = (request.json.get("question") or "").strip()
+    if not q:
+        return jsonify({"answer":"❌ सवाल लिखिए"})
 
     session.setdefault("chat", [])
-    messages = []
+    messages = [{
+        "role":"system",
+        "content":(
+            "You are OpenTutor AI.\n"
+            "Behave like ChatGPT + Gemini.\n"
+            "Ask clarification if question is vague.\n"
+            "Give options if needed.\n"
+            "Explain clearly.\n"
+        )
+    }]
 
-    # ---------- CORE BRAIN (ChatGPT + Gemini style) ----------
-    if mode == "exam":
-        system_prompt = """
-You are OpenTutor AI in STRICT EXAM MODE.
+    for m in session["chat"][-8:]:
+        messages.append(m)
 
-Rules:
-- Give only the exact answer asked.
-- Short, crisp, exam-ready.
-- No extra explanation.
-- No options unless asked.
-- No conversation.
-"""
-        temperature = 0.15
-        max_tokens = 180
-        messages.append({"role": "system", "content": system_prompt})
+    messages.append({"role":"user","content":q})
 
-    else:
-        system_prompt = """
-You are OpenTutor AI with ChatGPT + Gemini style intelligence.
-
-Your behavior:
-- Talk like a helpful human tutor.
-- If the question is unclear or too broad, ASK A CLARIFYING QUESTION instead of guessing.
-- If multiple meanings are possible, give clear OPTIONS (numbered).
-- Understand follow-up questions using conversation context.
-- Explain simply, step-by-step.
-- Use Hindi / Hinglish / English based on user's language.
-- Stay strictly on topic.
-- Do NOT hallucinate facts.
-- Do NOT over-explain unless needed.
-"""
-        temperature = 0.35
-        max_tokens = 520
-        messages.append({"role": "system", "content": system_prompt})
-
-        # conversation memory
-        for m in session["chat"][-MAX_MEMORY:]:
-            messages.append(m)
-
-    # user message
-    messages.append({"role": "user", "content": question})
-
-    # ---------- AI Call ----------
     try:
-        response = client.chat.completions.create(
+        r = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
-            temperature=temperature,
-            max_tokens=max_tokens,
-            timeout=20
+            temperature=0.35,
+            max_tokens=500
         )
+        ans = r.choices[0].message.content.strip()
 
-        answer = response.choices[0].message.content.strip()
-        if not answer:
-            raise ValueError("Empty response")
+        session["chat"].append({"role":"user","content":q})
+        session["chat"].append({"role":"assistant","content":ans})
 
-        # save memory only in tutor mode
-        if mode != "exam":
-            session["chat"].append({"role": "user", "content": question})
-            session["chat"].append({"role": "assistant", "content": answer})
-            session["chat"] = session["chat"][-MAX_MEMORY * 2:]
+        return jsonify({"answer":ans})
 
-        return jsonify({"answer": answer})
-
-    except Exception:
-        return jsonify({
-            "answer": (
-                "⚠️ अभी सिस्टम थोड़ा व्यस्त है।\n"
-                "कृपया 10–20 सेकंड बाद फिर से कोशिश करें।"
-            )
-        })
-
-
-@app.route("/clear", methods=["POST"])
-def clear_chat():
-    session.clear()
-    return jsonify({"status": "cleared"})
+    except:
+        return jsonify({"answer":"⚠️ अभी समस्या है, बाद में प्रयास करें"})
 
 
 if __name__ == "__main__":

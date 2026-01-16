@@ -1,118 +1,106 @@
 * {
     box-sizing: border-box;
-    font-family: system-ui, -apple-system;
+    margin: 0;
+    padding: 0;
+    font-family: Arial, sans-serif;
 }
 
 body {
-    margin: 0;
     background: #343541;
-    color: #e5e5e5;
+    height: 100vh;
 }
 
-.layout {
+.app {
     display: flex;
     height: 100vh;
 }
 
 /* Sidebar */
 .sidebar {
-    width: 260px;
+    width: 220px;
     background: #202123;
-    display: flex;
-    flex-direction: column;
-    border-right: 1px solid #444;
+    color: white;
+    padding: 20px;
 }
 
-.sidebar-header {
-    padding: 15px;
-    border-bottom: 1px solid #444;
+.sidebar h2 {
+    margin-bottom: 20px;
 }
 
-.brand {
-    font-size: 18px;
-    margin-bottom: 10px;
-}
-
-.sidebar-header button {
+.sidebar button {
     width: 100%;
     padding: 10px;
-    background: #19c37d;
+    margin-bottom: 10px;
+    background: #2a2b32;
+    color: white;
     border: none;
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
 }
 
-.sidebar-footer {
-    padding: 15px;
-    border-top: 1px solid #444;
-    font-size: 14px;
-}
-
-.sidebar-footer a {
-    color: #19c37d;
-    text-decoration: none;
-}
-
-/* Main */
-.main {
+/* Chat Area */
+.chat-area {
     flex: 1;
     display: flex;
     flex-direction: column;
 }
 
+/* Messages */
 #chat-box {
     flex: 1;
     padding: 20px;
     overflow-y: auto;
 }
 
-/* Messages */
-.user-msg {
+/* User bubble */
+.user {
     background: #2f80ed;
     color: white;
-    padding: 14px 18px;
-    border-radius: 16px;
-    margin: 12px 0;
-    max-width: 70%;
-    margin-left: auto;
-}
-
-.ai-msg {
-    background: #444654;
-    color: #e5e5e5;
-    padding: 14px 18px;
-    border-radius: 16px;
-    margin: 12px 0;
-    max-width: 70%;
-}
-
-/* Input bar */
-.input-bar {
-    height: 80px;
-    background: #40414f;
-    display: flex;
-    gap: 10px;
-    padding: 15px;
-    border-top: 1px solid #555;
-}
-
-textarea {
-    flex: 1;
-    resize: none;
-    background: #40414f;
-    color: #fff;
-    border-radius: 10px;
     padding: 12px;
-    border: 1px solid #666;
-    font-size: 16px;
+    border-radius: 12px;
+    max-width: 70%;
+    margin: 10px 0 10px auto;
 }
 
-button {
-    width: 60px;
-    border-radius: 10px;
-    background: #19c37d;
-    color: black;
+/* AI bubble */
+.ai {
+    background: #444654;
+    color: white;
+    padding: 12px;
+    border-radius: 12px;
+    max-width: 70%;
+    margin: 10px auto 10px 0;
+}
+
+/* Input Bar */
+.input-bar {
+    display: flex;
+    padding: 15px;
+    background: #40414f;
+}
+
+.input-bar textarea {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
     border: none;
-    font-size: 22px;
+    resize: none;
+    height: 45px;
+}
+
+.input-bar button {
+    margin-left: 10px;
+    padding: 10px 16px;
+    border: none;
+    border-radius: 8px;
     cursor: pointer;
+}
+
+#send {
+    background: #19c37d;
+}
+
+#mic {
+    background: #555;
+    color: white;
 }

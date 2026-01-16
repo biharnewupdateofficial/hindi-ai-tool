@@ -1,156 +1,38 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>OpenTutor AI</title>
-    <link rel="stylesheet" href="/static/style.css">
-    <style>
-        /* Fade-in animation */
-        .fade-in {
-            animation: fadeIn 0.4s ease-in;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(4px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-    </style>
+<meta charset="UTF-8">
+<title>OpenTutor AI</title>
+<link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
-<div class="app-container">
-    <h1>🤖 OpenTutor AI</h1>
+<div class="app">
 
-    <div class="mode-bar">
-        <button id="tutorBtn" class="active">🧠 Tutor</button>
-        <button id="examBtn">📝 Exam</button>
-        <button onclick="clearChat()">🧹 New Chat</button>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <h2>🤖 OpenTutor AI</h2>
+        <button>🧠 Tutor</button>
+        <button>📝 Exam</button>
+        <button>➕ New Chat</button>
     </div>
 
-    <div id="chat-box"></div>
+    <!-- Chat Area -->
+    <div class="chat-area">
 
-    <div class="input-area">
-        <textarea id="question" placeholder="Apna sawal yahan likhiye..."></textarea>
-        <button onclick="sendQuestion()">Send</button>
+        <div id="chat-box"></div>
+
+        <!-- Input Bar -->
+        <div class="input-bar">
+            <button id="mic">🎤</button>
+            <textarea id="question" placeholder="Apna sawal yahan likhiye..."></textarea>
+            <button id="send">Send</button>
+        </div>
+
     </div>
+
 </div>
 
-<script>
-let mode = "tutor";
-const chatBox = document.getElementById("chat-box");
-const input = document.getElementById("question");
-const tutorBtn = document.getElementById("tutorBtn");
-const examBtn = document.getElementById("examBtn");
-
-/* Restore chat */
-window.onload = () => {
-    const saved = localStorage.getItem("opentutor_chat");
-    if (saved) {
-        chatBox.innerHTML = saved;
-        chatBox.scrollTop = chatBox.scrollHeight;
-    }
-};
-
-/* Mode switch */
-tutorBtn.onclick = () => {
-    mode = "tutor";
-    tutorBtn.classList.add("active");
-    examBtn.classList.remove("active");
-};
-examBtn.onclick = () => {
-    mode = "exam";
-    examBtn.classList.add("active");
-    tutorBtn.classList.remove("active");
-};
-
-/* Save chat */
-function saveChat() {
-    localStorage.setItem("opentutor_chat", chatBox.innerHTML);
-}
-
-/* Add user message */
-function addUserMessage(text) {
-    const msg = document.createElement("div");
-    msg.className = "user-msg fade-in";
-    msg.innerText = text;
-    chatBox.appendChild(msg);
-    chatBox.scrollTop = chatBox.scrollHeight;
-    saveChat();
-}
-
-/* Typing indicator */
-function showTyping() {
-    const t = document.createElement("div");
-    t.className = "ai-msg";
-    t.id = "typing";
-    t.innerText = "OpenTutor AI likh raha hai...";
-    chatBox.appendChild(t);
-    chatBox.scrollTop = chatBox.scrollHeight;
-}
-function removeTyping() {
-    const t = document.getElementById("typing");
-    if (t) t.remove();
-}
-
-/* Typewriter effect for AI */
-function typeAI(text) {
-    const msg = document.createElement("div");
-    msg.className = "ai-msg fade-in";
-    chatBox.appendChild(msg);
-
-    let i = 0;
-    const formatted = text.replace(/\n/g, "<br>");
-    const interval = setInterval(() => {
-        msg.innerHTML = formatted.slice(0, i);
-        i++;
-        chatBox.scrollTop = chatBox.scrollHeight;
-        if (i > formatted.length) {
-            clearInterval(interval);
-            saveChat();
-        }
-    }, 12);
-}
-
-/* Send question */
-function sendQuestion() {
-    const q = input.value.trim();
-    if (!q) return;
-
-    addUserMessage(q);
-    input.value = "";
-    input.focus();
-
-    showTyping();
-
-    fetch("/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: q, mode })
-    })
-    .then(res => res.json())
-    .then(data => {
-        removeTyping();
-        typeAI(data.answer || "⚠️ Koi jawab nahi mila");
-    })
-    .catch(() => {
-        removeTyping();
-        typeAI("❌ Server error. Dobara try karein.");
-    });
-}
-
-/* Enter = send */
-input.addEventListener("keydown", e => {
-    if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        sendQuestion();
-    }
-});
-
-/* Clear chat */
-function clearChat() {
-    chatBox.innerHTML = "";
-    localStorage.removeItem("opentutor_chat");
-}
-</script>
-
+<script src="/static/app.js"></script>
 </body>
 </html>

@@ -1,40 +1,173 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>OpenTutor AI</title>
-    <style>
-        body { background:#0f172a; color:white; font-family:Arial }
-        .user { background:#2563eb; padding:10px; margin:5px; border-radius:10px }
-        .ai { background:#1e293b; padding:10px; margin:5px; border-radius:10px }
-    </style>
+<meta charset="UTF-8">
+<title>OpenTutor AI</title>
+<style>
+* { box-sizing: border-box; font-family: Arial, sans-serif; }
+
+body {
+    margin: 0;
+    background: #f5f5f5;
+}
+
+/* Layout */
+.app {
+    display: flex;
+    height: 100vh;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 260px;
+    background: #1e293b;
+    color: white;
+    padding: 15px;
+}
+
+.sidebar h2 {
+    margin-top: 0;
+}
+
+.sidebar button {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: none;
+    border-radius: 8px;
+    background: #2563eb;
+    color: white;
+    cursor: pointer;
+}
+
+.sidebar button:hover {
+    background: #1d4ed8;
+}
+
+/* Chat Area */
+.chat-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-header {
+    background: white;
+    padding: 15px;
+    border-bottom: 1px solid #ddd;
+    font-weight: bold;
+}
+
+.chat-box {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.user {
+    background: #2563eb;
+    color: white;
+    padding: 10px 14px;
+    margin: 8px 0;
+    border-radius: 12px;
+    max-width: 70%;
+    margin-left: auto;
+}
+
+.ai {
+    background: #e5e7eb;
+    padding: 10px 14px;
+    margin: 8px 0;
+    border-radius: 12px;
+    max-width: 70%;
+    margin-right: auto;
+}
+
+/* Input */
+.input-area {
+    display: flex;
+    padding: 15px;
+    border-top: 1px solid #ddd;
+    background: white;
+}
+
+textarea {
+    flex: 1;
+    resize: none;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    height: 50px;
+}
+
+.send-btn {
+    margin-left: 10px;
+    padding: 0 20px;
+    border: none;
+    border-radius: 8px;
+    background: #22c55e;
+    color: white;
+    cursor: pointer;
+}
+</style>
 </head>
+
 <body>
 
-<h2>🤖 OpenTutor AI</h2>
-<a href="/logout">Logout</a>
+<div class="app">
 
-<div id="chat"></div>
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <h2>🤖 OpenTutor AI</h2>
+        <button onclick="newChat()">➕ New Chat</button>
+        <button onclick="location.href='/logout'">🚪 Logout</button>
+    </div>
 
-<textarea id="q" placeholder="Type message..."></textarea>
-<button onclick="send()">Send</button>
+    <!-- CHAT -->
+    <div class="chat-area">
+        <div class="chat-header">ChatGPT + Gemini Style</div>
+
+        <div id="chatBox" class="chat-box"></div>
+
+        <div class="input-area">
+            <textarea id="question" placeholder="Type your message..."></textarea>
+            <button class="send-btn" onclick="send()">Send</button>
+        </div>
+    </div>
+
+</div>
 
 <script>
+const chatBox = document.getElementById("chatBox");
+
+function addMsg(text, cls){
+    let div = document.createElement("div");
+    div.className = cls;
+    div.innerText = text;
+    chatBox.appendChild(div);
+    chatBox.scrollTop = chatBox.scrollHeight;
+}
+
 function send(){
-    let q = document.getElementById("q").value;
+    let q = document.getElementById("question").value.trim();
     if(!q) return;
 
-    document.getElementById("chat").innerHTML += `<div class="user">${q}</div>`;
-    document.getElementById("q").value="";
+    addMsg(q, "user");
+    document.getElementById("question").value = "";
 
     fetch("/ask",{
         method:"POST",
-        headers:{"Content-Type":"application/json"},
+        headers:{ "Content-Type":"application/json" },
         body:JSON.stringify({question:q})
     })
     .then(r=>r.json())
     .then(d=>{
-        document.getElementById("chat").innerHTML += `<div class="ai">${d.answer}</div>`;
-    })
+        addMsg(d.answer, "ai");
+    });
+}
+
+function newChat(){
+    chatBox.innerHTML = "";
 }
 </script>
 

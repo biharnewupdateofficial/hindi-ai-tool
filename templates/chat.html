@@ -1,77 +1,39 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8">
-<title>OpenTutor AI</title>
-<link rel="stylesheet" href="/static/style.css">
+    <title>OpenTutor AI</title>
+    <style>
+        body { background:#0f172a; color:white; font-family:Arial }
+        .user { background:#2563eb; padding:10px; margin:5px; border-radius:10px }
+        .ai { background:#1e293b; padding:10px; margin:5px; border-radius:10px }
+    </style>
 </head>
 <body>
 
-<div class="layout">
-    <div class="sidebar">
-        <div class="sidebar-header">
-            🤖 OpenTutor AI
-            <button onclick="location.href='/new-chat'">＋ New</button>
-        </div>
-        <div class="sidebar-footer">
-            {{ username }} |
-            <a href="/logout">Logout</a>
-        </div>
-    </div>
+<h2>🤖 OpenTutor AI</h2>
+<a href="/logout">Logout</a>
 
-    <div class="main">
-        <div id="chat-box">
-            {% for m in history %}
-                <div class="{{ 'user-msg' if m.role=='user' else 'ai-msg' }}">
-                    {{ m.content }}
-                </div>
-            {% endfor %}
-        </div>
+<div id="chat"></div>
 
-        <div class="input-bar">
-            <input type="file" id="fileInput">
-            <textarea id="question" placeholder="Message..."></textarea>
-            <button onclick="send()">➤</button>
-        </div>
-    </div>
-</div>
+<textarea id="q" placeholder="Type message..."></textarea>
+<button onclick="send()">Send</button>
 
 <script>
-const chat = document.getElementById("chat-box");
-
-document.getElementById("fileInput").onchange = () => {
-    const file = fileInput.files[0];
-    const form = new FormData();
-    form.append("file", file);
-    fetch("/upload", { method:"POST", body:form });
-};
-
 function send(){
-    const q = question.value.trim();
+    let q = document.getElementById("q").value;
     if(!q) return;
 
-    chat.innerHTML += `<div class='user-msg'>${q}</div>`;
-    const ai = document.createElement("div");
-    ai.className="ai-msg";
-    chat.appendChild(ai);
-    question.value="";
+    document.getElementById("chat").innerHTML += `<div class="user">${q}</div>`;
+    document.getElementById("q").value="";
 
     fetch("/ask",{
         method:"POST",
-        headers:{ "Content-Type":"application/json"},
+        headers:{"Content-Type":"application/json"},
         body:JSON.stringify({question:q})
-    }).then(r=>{
-        const rd=r.body.getReader();
-        const dec=new TextDecoder();
-        function read(){
-            rd.read().then(({done,value})=>{
-                if(done) return;
-                ai.innerText+=dec.decode(value);
-                chat.scrollTop=chat.scrollHeight;
-                read();
-            })
-        }
-        read();
+    })
+    .then(r=>r.json())
+    .then(d=>{
+        document.getElementById("chat").innerHTML += `<div class="ai">${d.answer}</div>`;
     })
 }
 </script>

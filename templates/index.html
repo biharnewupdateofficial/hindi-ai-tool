@@ -1,37 +1,28 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-<meta charset="UTF-8">
-<title>OpenTutor AI</title>
-<link rel="stylesheet" href="/static/style.css">
+    <title>OpenTutor AI</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
-<div class="app">
+<h2>🤖 OpenTutor AI</h2>
 
-    <!-- Sidebar -->
-    <div class="sidebar">
-        <h2>🤖 OpenTutor AI</h2>
-        <button>🧠 Tutor</button>
-        <button>📝 Exam</button>
-        <button>➕ New Chat</button>
-    </div>
-
-    <!-- Chat Area -->
-    <div class="chat-area">
-
-        <div id="chat-box"></div>
-
-        <!-- Input Bar -->
-        <div class="input-bar">
-            <button id="mic">🎤</button>
-            <textarea id="question" placeholder="Apna sawal yahan likhiye..."></textarea>
-            <button id="send">Send</button>
-        </div>
-
-    </div>
-
+<div id="chat-box">
+{% for msg in chat %}
+<div class="{{ 'user' if msg.role=='user' else 'ai' }}">{{ msg.text }}</div>
+{% endfor %}
 </div>
+
+<textarea id="question" placeholder="Apna sawal likhiye..."></textarea>
+<button onclick="sendMessage()">Send</button>
+<button onclick="clearChat()">New Chat</button>
+
+<hr>
+
+<h3>📄 PDF Upload</h3>
+<input type="file" id="pdf">
+<button onclick="uploadPDF()">Upload & Summarize</button>
 
 <script src="/static/app.js"></script>
 </body>

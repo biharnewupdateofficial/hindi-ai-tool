@@ -1,104 +1,112 @@
-from flask import Flask, render_template, request, jsonify, session
-import os, requests
-from werkzeug.utils import secure_filename
-from PyPDF2 import PdfReader
+from flask import Flask, render_template, request, redirect, session, jsonify
+import sqlite3, os, requests
 
 app = Flask(__name__)
 app.secret_key = "opentutor_secret"
 
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
 
-UPLOAD_FOLDER = "uploads"
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# ---------- DATABASE ----------
+def db():
+    return sqlite3.connect("users.db")
 
-# ---------------- HOME ----------------
-@app.route("/")
-def home():
-    if "chat" not in session:
-        session["chat"] = []
-    return render_template("index.html", chat=session["chat"])
+with db() as con:
+    con.execute("""
+    CREATE TABLE IF NOT EXISTS users (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        username TEXT UNIQUE,
+        password TEXT
+    )
+    """)
+    con.execute("""
+    CREATE TABLE IF NOT EXISTS chats (
+        user_id INTEGER,
+        role TEXT,
+        text TEXT
+    )
+    """)
 
+# ---------- LOGIN ----------
+@app.route("/", methods=["GET","POST"])
+def login():
+    if request.method == "POST":
+        u = request.form["username"]
+        p = request.form["password"]
 
-# ---------------- CHAT ----------------
+        cur = db().cursor()
+        cur.execute("SELECT id FROM users WHERE username=? AND password=?", (u,p))
+        user = cur.fetchone()
+
+        if user:
+            session["user"] = user[0]
+            return redirect("/chat")
+        else:
+            return render_template("login.html", error="Invalid login")
+
+    return render_template("login.html")
+
+# ---------- SIGNUP ----------
+@app.route("/signup", methods=["POST"])
+def signup():
+    u = request.form["username"]
+    p = request.form["password"]
+
+    try:
+        with db() as con:
+            con.execute("INSERT INTO users(username,password) VALUES(?,?)",(u,p))
+        return redirect("/")
+    except:
+        return render_template("login.html", error="User exists")
+
+# ---------- CHAT ----------
+@app.route("/chat")
+def chat():
+    if "user" not in session:
+        return redirect("/")
+
+    cur = db().cursor()
+    cur.execute("SELECT role,text FROM chats WHERE user_id=?", (session["user"],))
+    history = cur.fetchall()
+
+    return render_template("chat.html", chat=history)
+
+# ---------- ASK ----------
 @app.route("/ask", methods=["POST"])
 def ask():
-    question = request.json.get("question")
+    q = request.json["question"]
+    uid = session["user"]
 
-    history = session.get("chat", [])
+    cur = db().cursor()
+    cur.execute("SELECT role,text FROM chats WHERE user_id=?", (uid,))
+    history = cur.fetchall()
 
-    messages = [{"role": "system", "content": "You are a helpful Hindi AI tutor."}]
-    for msg in history:
-        messages.append({"role": msg["role"], "content": msg["text"]})
-    messages.append({"role": "user", "content": question})
+    messages = [{"role":"system","content":"You are a helpful Hindi AI tutor."}]
+    for r,t in history[-10:]:
+        messages.append({"role":r,"content":t})
+    messages.append({"role":"user","content":q})
 
-    payload = {
-        "model": "gpt-4o-mini",
-        "messages": messages
-    }
-
-    headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
-        "Content-Type": "application/json"
-    }
-
-    r = requests.post(
+    res = requests.post(
         "https://api.openai.com/v1/chat/completions",
-        headers=headers,
-        json=payload
-    )
+        headers={
+            "Authorization":f"Bearer {OPENAI_API_KEY}",
+            "Content-Type":"application/json"
+        },
+        json={"model":"gpt-4o-mini","messages":messages}
+    ).json()
 
-    answer = r.json()["choices"][0]["message"]["content"]
+    ans = res["choices"][0]["message"]["content"]
 
-    history.append({"role": "user", "text": question})
-    history.append({"role": "assistant", "text": answer})
+    with db() as con:
+        con.execute("INSERT INTO chats VALUES(?,?,?)",(uid,"user",q))
+        con.execute("INSERT INTO chats VALUES(?,?,?)",(uid,"assistant",ans))
 
-    session["chat"] = history[-20:]  # last 20 messages only
+    return jsonify({"answer":ans})
 
-    return jsonify({"answer": answer})
-
-
-# ---------------- PDF UPLOAD ----------------
-@app.route("/upload", methods=["POST"])
-def upload_pdf():
-    file = request.files["pdf"]
-    filename = secure_filename(file.filename)
-    path = os.path.join(UPLOAD_FOLDER, filename)
-    file.save(path)
-
-    reader = PdfReader(path)
-    text = ""
-    for page in reader.pages:
-        text += page.extract_text()
-
-    payload = {
-        "model": "gpt-4o-mini",
-        "messages": [
-            {"role": "system", "content": "Summarize this PDF in simple Hindi."},
-            {"role": "user", "content": text[:12000]}
-        ]
-    }
-
-    headers = {
-        "Authorization": f"Bearer {OPENAI_API_KEY}",
-        "Content-Type": "application/json"
-    }
-
-    r = requests.post(
-        "https://api.openai.com/v1/chat/completions",
-        headers=headers,
-        json=payload
-    )
-
-    summary = r.json()["choices"][0]["message"]["content"]
-    return jsonify({"summary": summary})
-
-
-# ---------------- CLEAR CHAT ----------------
-@app.route("/clear")
-def clear():
-    session.pop("chat", None)
-    return jsonify({"status": "cleared"})
-
+# ---------- LOGOUT ----------
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/")
 
 if __name__ == "__main__":
     app.run()

@@ -1,38 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>OpenTutor AI</title>
+<title>Chat - OpenTutor AI</title>
+<link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
-<div id="top"></div>
+<h2>🤖 OpenTutor AI</h2>
+<a href="/logout">Logout</a>
 
-<div id="chat"></div>
-<textarea id="q"></textarea>
+<div id="chat-box">
+{% for r,t in chat %}
+<div class="{{r}}">{{t}}</div>
+{% endfor %}
+</div>
+
+<textarea id="question" placeholder="Type here..."></textarea>
 <button onclick="send()">Send</button>
 
-<script>
-function loadStatus(){
-    fetch("/status").then(r=>r.json()).then(d=>{
-        document.getElementById("top").innerHTML=
-        `Plan: <b>${d.plan}</b> | Messages left: <b>${d.left}</b>
-         ${d.plan==="free" ? '<a href="/upgrade">Upgrade</a>':''}`;
-    });
-}
-loadStatus();
-
-function send(){
-    let q=document.getElementById("q").value;
-    document.getElementById("chat").innerHTML+=`<p>You: ${q}</p>`;
-    document.getElementById("q").value="";
-    fetch("/ask",{method:"POST",headers:{'Content-Type':'application/json'},
-    body:JSON.stringify({question:q})})
-    .then(r=>r.json()).then(d=>{
-        document.getElementById("chat").innerHTML+=`<p>AI: ${d.answer}</p>`;
-        loadStatus();
-    });
-}
-</script>
-
+<script src="/static/app.js"></script>
 </body>
 </html>

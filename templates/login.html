@@ -1,13 +1,26 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Login | OpenTutor AI</title>
+<title>Login - OpenTutor AI</title>
+<link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <h2>Login</h2>
-    <form method="post">
-        <input name="username" placeholder="Enter name" required>
-        <button type="submit">Login</button>
-    </form>
+
+<h2>🔐 OpenTutor AI Login</h2>
+
+<form method="post">
+<input name="username" placeholder="Username" required>
+<input name="password" type="password" placeholder="Password" required>
+<button>Login</button>
+</form>
+
+<form action="/signup" method="post">
+<input name="username" placeholder="New Username" required>
+<input name="password" type="password" placeholder="New Password" required>
+<button>Signup</button>
+</form>
+
+<p style="color:red">{{error}}</p>
+
 </body>
 </html>

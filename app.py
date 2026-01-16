@@ -1,13 +1,18 @@
 from flask import Flask, render_template, request, jsonify, session, redirect
 import os, datetime
-import openai
+import openai, razorpay
 
 app = Flask(__name__)
 app.secret_key = "super-secret-key"
 
 openai.api_key = os.getenv("OPENAI_API_KEY")
 
-FREE_DAILY_LIMIT = 10  # free users per day
+# Razorpay
+rzp_client = razorpay.Client(
+    auth=(os.getenv("RAZORPAY_KEY_ID"), os.getenv("RAZORPAY_KEY_SECRET"))
+)
+
+FREE_DAILY_LIMIT = 10
 
 def today():
     return datetime.date.today().isoformat()
@@ -21,27 +26,36 @@ def home():
 @app.route("/login", methods=["GET","POST"])
 def login():
     if request.method=="POST":
-        user=request.form.get("username")
-        if user:
-            session["user"]=user
+        u=request.form.get("username")
+        if u:
+            session["user"]=u
             session.setdefault("plan","free")
             session.setdefault("usage",{today():0})
             return redirect("/")
     return render_template("login.html")
 
-@app.route("/upgrade")
-def upgrade():
-    return render_template("upgrade.html")
-
-@app.route("/set-paid")
-def set_paid():
-    session["plan"]="paid"
-    return redirect("/")
-
 @app.route("/logout")
 def logout():
     session.clear()
     return redirect("/login")
+
+@app.route("/upgrade")
+def upgrade():
+    order = rzp_client.order.create({
+        "amount": 9900,  # ₹99
+        "currency": "INR",
+        "payment_capture": 1
+    })
+    return render_template(
+        "upgrade.html",
+        order_id=order["id"],
+        key=os.getenv("RAZORPAY_KEY_ID")
+    )
+
+@app.route("/payment-success", methods=["POST"])
+def payment_success():
+    session["plan"] = "paid"
+    return redirect("/")
 
 @app.route("/ask", methods=["POST"])
 def ask():
@@ -52,7 +66,7 @@ def ask():
     usage.setdefault(today(),0)
 
     if session.get("plan")=="free" and usage[today()]>=FREE_DAILY_LIMIT:
-        return jsonify({"answer":"🚫 Daily free limit reached. Upgrade to Pro."})
+        return jsonify({"answer":"🚫 Free limit reached. Upgrade to Pro."})
 
     q=request.json.get("question","")
     if not q:
@@ -62,7 +76,7 @@ def ask():
         res=openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role":"system","content":"You are a helpful AI tutor like ChatGPT and Gemini."},
+                {"role":"system","content":"You are a ChatGPT + Gemini style AI assistant."},
                 {"role":"user","content":q}
             ]
         )

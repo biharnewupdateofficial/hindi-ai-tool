@@ -1,37 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Upgrade | OpenTutor AI</title>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <title>Upgrade – OpenTutor AI</title>
+    <style>
+        body {
+            font-family: Arial;
+            background: #0f172a;
+            color: white;
+            text-align: center;
+            padding-top: 80px;
+        }
+        .card {
+            background: #1e293b;
+            padding: 30px;
+            width: 320px;
+            margin: auto;
+            border-radius: 12px;
+        }
+        button {
+            margin-top: 20px;
+            padding: 12px 20px;
+            background: #22c55e;
+            border: none;
+            color: black;
+            font-size: 16px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
 
-<h2>🚀 Upgrade to OpenTutor Pro</h2>
-<p>Unlimited messages + priority AI</p>
-
-<button id="pay">Pay ₹99</button>
-
-<form id="success" method="POST" action="/payment-success"></form>
-
-<script>
-var options = {
-    "key": "{{ key }}",
-    "amount": 9900,
-    "currency": "INR",
-    "name": "OpenTutor AI",
-    "description": "Pro Plan",
-    "order_id": "{{ order_id }}",
-    "handler": function () {
-        document.getElementById("success").submit();
-    }
-};
-document.getElementById("pay").onclick = function(){
-    new Razorpay(options).open();
-};
-</script>
-
-<br><br>
-<a href="/">⬅ Back</a>
+<div class="card">
+    <h2>🚀 Upgrade to Pro</h2>
+    <p>Unlimited chat<br>Voice AI<br>Image Generator</p>
+    <button>Coming Soon</button>
+</div>
 
 </body>
 </html>

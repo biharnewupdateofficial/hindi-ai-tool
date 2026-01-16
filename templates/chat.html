@@ -16,11 +16,6 @@
             <button onclick="newChat()">＋ New Chat</button>
         </div>
 
-        <div id="history">
-            <div class="history-title">Chats</div>
-            <!-- history items (future ready) -->
-        </div>
-
         <div class="sidebar-footer">
             👤 {{ username }} <br>
             <a href="/logout">Logout</a>
@@ -43,10 +38,11 @@
 const chatBox = document.getElementById("chat-box");
 const input = document.getElementById("question");
 
-function addMessage(text, sender) {
+function addMessage(text, sender, streaming=false) {
     const msg = document.createElement("div");
     msg.className = sender === "user" ? "user-msg" : "ai-msg";
     msg.innerText = text;
+    if (streaming) msg.id = "streaming";
     chatBox.appendChild(msg);
     chatBox.scrollTop = chatBox.scrollHeight;
 }
@@ -58,17 +54,26 @@ function sendQuestion() {
     addMessage(question, "user");
     input.value = "";
 
+    addMessage("", "ai", true);
+
     fetch("/ask", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({ question })
-    })
-    .then(res => res.json())
-    .then(data => {
-        addMessage(data.answer, "ai");
-    })
-    .catch(() => {
-        addMessage("❌ Error, please try again", "ai");
+    }).then(response => {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        const aiMsg = document.getElementById("streaming");
+
+        function read() {
+            reader.read().then(({done, value}) => {
+                if (done) return;
+                aiMsg.innerText += decoder.decode(value);
+                chatBox.scrollTop = chatBox.scrollHeight;
+                read();
+            });
+        }
+        read();
     });
 }
 

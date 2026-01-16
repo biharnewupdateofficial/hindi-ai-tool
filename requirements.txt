@@ -1,4 +1,4 @@
 flask
+requests
+pyttsx3
 gunicorn
-openai==0.28.1
-razorpay

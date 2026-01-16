@@ -1,22 +1,31 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Chat - OpenTutor AI</title>
+<meta charset="UTF-8">
+<title>OpenTutor AI</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
+<body class="dark">
 
-<h2>🤖 OpenTutor AI</h2>
-<a href="/logout">Logout</a>
+<div class="top-bar">
+  <span>🤖 OpenTutor AI</span>
+  <div>
+    <button onclick="toggleTheme()">🌙</button>
+    <a href="/logout">Logout</a>
+  </div>
+</div>
 
 <div id="chat-box">
 {% for r,t in chat %}
-<div class="{{r}}">{{t}}</div>
+<div class="msg {{r}}">{{t}}</div>
 {% endfor %}
 </div>
 
-<textarea id="question" placeholder="Type here..."></textarea>
-<button onclick="send()">Send</button>
+<div class="input-bar">
+  <button onclick="startMic()">🎤</button>
+  <textarea id="question" placeholder="Type or speak..."></textarea>
+  <button onclick="send()">Send</button>
+</div>
 
 <script src="/static/app.js"></script>
 </body>

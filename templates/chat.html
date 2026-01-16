@@ -8,17 +8,20 @@
 <body>
 
 <div class="top-bar">
-    <div class="logo">✨ OpenTutor AI</div>
-    <div class="user">👤 {{ username }} | <a href="/logout">Logout</a></div>
+    <div class="logo">🤖 OpenTutor AI</div>
+    <div class="user">
+        👤 {{ username }} |
+        <a href="/logout">Logout</a>
+    </div>
 </div>
 
-<div class="chat-container">
+<div class="chat-wrapper">
     <div id="chat-box"></div>
 </div>
 
-<div class="input-container">
-    <textarea id="question" placeholder="Type your question here..."></textarea>
-    <button onclick="sendQuestion()">Send</button>
+<div class="input-bar">
+    <textarea id="question" placeholder="Send a message..."></textarea>
+    <button onclick="sendQuestion()">➤</button>
 </div>
 
 <script>
@@ -43,14 +46,14 @@ function sendQuestion() {
     fetch("/ask", {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({question})
+        body: JSON.stringify({ question })
     })
     .then(res => res.json())
     .then(data => {
         addMessage(data.answer, "ai");
     })
     .catch(() => {
-        addMessage("❌ Error aaya, dobara try karein", "ai");
+        addMessage("❌ Error, please try again", "ai");
     });
 }
 

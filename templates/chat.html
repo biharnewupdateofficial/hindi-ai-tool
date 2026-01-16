@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>OpenTutor AI</title>
 
 <style>
@@ -19,7 +20,7 @@ body{margin:0;background:var(--bg);color:var(--text);}
 
 /* Sidebar */
 .sidebar{
-    width:280px;background:var(--card);
+    width:260px;background:var(--card);
     padding:10px;border-right:1px solid #444;
     display:flex;flex-direction:column
 }
@@ -30,24 +31,10 @@ body{margin:0;background:var(--bg);color:var(--text);}
 }
 .new{background:#22c55e;color:white}
 .toggle{background:#6366f1;color:white}
+.voice{background:#f59e0b;color:black}
 .logout{background:#ef4444;color:white}
 
-.chat-list{
-    flex:1;overflow-y:auto;margin-top:10px
-}
-.chat-item{
-    padding:8px;border-radius:6px;
-    background:#ddd;margin-bottom:6px;
-    cursor:pointer;
-    display:flex;justify-content:space-between;
-    align-items:center;font-size:14px
-}
-.dark .chat-item{background:#334155}
-.chat-item span{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.chat-item button{
-    margin-left:4px;border:none;
-    background:none;cursor:pointer
-}
+.chat-list{flex:1;overflow-y:auto;margin-top:10px}
 
 /* Chat */
 .chat-area{flex:1;display:flex;flex-direction:column}
@@ -61,26 +48,33 @@ body{margin:0;background:var(--bg);color:var(--text);}
 .user{
     background:var(--user);color:white;
     padding:10px;border-radius:12px;
-    max-width:70%;margin:8px 0;margin-left:auto
+    max-width:80%;margin:8px 0;margin-left:auto
 }
 .ai{
     background:var(--ai);padding:10px;
-    border-radius:12px;max-width:70%;
+    border-radius:12px;max-width:80%;
     margin:8px 0
 }
 .typing{opacity:.7;font-style:italic}
 
 /* Input */
 .input{
-    display:flex;padding:15px;background:var(--card)
+    display:flex;padding:12px;background:var(--card)
 }
 textarea{
-    flex:1;padding:10px;border-radius:8px;border:none
+    flex:1;padding:10px;border-radius:8px;border:none;
+    min-height:44px
 }
 .send{
-    margin-left:10px;padding:0 20px;
+    margin-left:8px;padding:0 16px;
     border:none;border-radius:8px;
     background:#22c55e;color:white
+}
+
+/* Mobile */
+@media(max-width:768px){
+    .sidebar{display:none}
+    .user,.ai{max-width:95%}
 }
 </style>
 </head>
@@ -92,9 +86,8 @@ textarea{
     <h2>🤖 OpenTutor AI</h2>
     <button class="new" onclick="newChat()">➕ New Chat</button>
     <button class="toggle" onclick="toggle()">🌗 Dark / Light</button>
+    <button class="voice" onclick="toggleVoice()">🔊 Voice: <span id="voiceStatus">ON</span></button>
     <button class="logout" onclick="location.href='/logout'">🚪 Logout</button>
-
-    <div class="chat-list" id="chatList"></div>
 </div>
 
 <div class="chat-area">
@@ -111,9 +104,11 @@ textarea{
 <script>
 let chats = JSON.parse(localStorage.getItem("chats")||"{}");
 let current = localStorage.getItem("current") || null;
-const chatBox = document.getElementById("chatBox");
-const list = document.getElementById("chatList");
-const input = document.getElementById("q");
+let voiceOn = localStorage.getItem("voice") !== "off";
+
+const chatBox=document.getElementById("chatBox");
+const input=document.getElementById("q");
+const voiceStatus=document.getElementById("voiceStatus");
 
 /* THEME */
 if(localStorage.getItem("theme")==="dark") document.body.classList.add("dark");
@@ -123,83 +118,48 @@ function toggle(){
         document.body.classList.contains("dark")?"dark":"light");
 }
 
+/* VOICE */
+voiceStatus.innerText = voiceOn ? "ON" : "OFF";
+function toggleVoice(){
+    voiceOn = !voiceOn;
+    localStorage.setItem("voice", voiceOn ? "on":"off");
+    voiceStatus.innerText = voiceOn ? "ON":"OFF";
+}
+function speak(text){
+    if(!voiceOn) return;
+    let u = new SpeechSynthesisUtterance(text);
+    u.lang="en-IN";
+    speechSynthesis.speak(u);
+}
+
 /* SAVE */
 function save(){
     localStorage.setItem("chats",JSON.stringify(chats));
     localStorage.setItem("current",current);
 }
 
-/* RENDER SIDEBAR */
-function renderList(){
-    list.innerHTML="";
-    Object.keys(chats).forEach(id=>{
-        let item=document.createElement("div");
-        item.className="chat-item";
-
-        let title=document.createElement("span");
-        title.innerText=chats[id].title;
-        title.onclick=()=>loadChat(id);
-
-        let rename=document.createElement("button");
-        rename.innerText="✏️";
-        rename.onclick=()=>{
-            let n=prompt("Rename chat",chats[id].title);
-            if(n){chats[id].title=n;save();renderList();}
-        };
-
-        let del=document.createElement("button");
-        del.innerText="🗑️";
-        del.onclick=()=>{
-            if(confirm("Delete this chat?")){
-                delete chats[id];
-                if(current===id) current=null;
-                save();
-                renderList();
-                if(!current) newChat();
-            }
-        };
-
-        let exp=document.createElement("button");
-        exp.innerText="⬇️";
-        exp.onclick=()=>exportChat(id);
-
-        item.append(title,rename,del,exp);
-        list.appendChild(item);
-    });
-}
-
 /* NEW CHAT */
 function newChat(){
     let id="chat_"+Date.now();
-    chats[id]={title:"New Chat",messages:[]};
-    current=id;
-    save();
-    renderList();
-    loadChat(id);
+    chats[id]={messages:[]};
+    current=id;save();loadChat(id);
 }
 
 /* LOAD CHAT */
 function loadChat(id){
-    current=id;
-    chatBox.innerHTML="";
-    chats[id].messages.forEach(m=>{
-        add(m.text,m.role,false);
-    });
-    save();
+    current=id;chatBox.innerHTML="";
+    chats[id].messages.forEach(m=>add(m.text,m.role,false));
 }
 
-/* ADD MESSAGE */
+/* ADD */
 function add(text,role,saveIt=true){
     let d=document.createElement("div");
-    d.className=role;
-    d.innerText=text;
+    d.className=role;d.innerText=text;
     chatBox.appendChild(d);
     chatBox.scrollTop=chatBox.scrollHeight;
     if(saveIt){
         chats[current].messages.push({text,role});
-        if(chats[current].messages.length===1)
-            chats[current].title=text.slice(0,30);
-        save();renderList();
+        save();
     }
 }
 
@@ -225,6 +185,7 @@ function send(){
     .then(d=>{
         document.getElementById("typing")?.remove();
         add(d.answer,"ai");
+        speak(d.answer);
     });
 }
 
@@ -235,22 +196,10 @@ input.addEventListener("keydown",e=>{
     }
 });
 
-/* EXPORT */
-function exportChat(id){
-    let text=chats[id].messages
-        .map(m=>(m.role==="user"?"You: ":"AI: ")+m.text)
-        .join("\n\n");
-    let blob=new Blob([text],{type:"text/plain"});
-    let a=document.createElement("a");
-    a.href=URL.createObjectURL(blob);
-    a.download=chats[id].title+".txt";
-    a.click();
-}
-
 /* INIT */
 if(!current) newChat();
 else loadChat(current);
-renderList();
 </script>
+
 </body>
 </html>

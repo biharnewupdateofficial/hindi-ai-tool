@@ -7,21 +7,36 @@
 </head>
 <body>
 
-<div class="top-bar">
-    <div class="logo">🤖 OpenTutor AI</div>
-    <div class="user">
-        👤 {{ username }} |
-        <a href="/logout">Logout</a>
+<div class="layout">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <div class="brand">🤖 OpenTutor AI</div>
+            <button onclick="newChat()">＋ New Chat</button>
+        </div>
+
+        <div id="history">
+            <div class="history-title">Chats</div>
+            <!-- history items (future ready) -->
+        </div>
+
+        <div class="sidebar-footer">
+            👤 {{ username }} <br>
+            <a href="/logout">Logout</a>
+        </div>
     </div>
-</div>
 
-<div class="chat-wrapper">
-    <div id="chat-box"></div>
-</div>
+    <!-- CHAT AREA -->
+    <div class="main">
+        <div id="chat-box"></div>
 
-<div class="input-bar">
-    <textarea id="question" placeholder="Send a message..."></textarea>
-    <button onclick="sendQuestion()">➤</button>
+        <div class="input-bar">
+            <textarea id="question" placeholder="Send a message..."></textarea>
+            <button onclick="sendQuestion()">➤</button>
+        </div>
+    </div>
+
 </div>
 
 <script>
@@ -55,6 +70,10 @@ function sendQuestion() {
     .catch(() => {
         addMessage("❌ Error, please try again", "ai");
     });
+}
+
+function newChat() {
+    chatBox.innerHTML = "";
 }
 
 input.addEventListener("keydown", function(e) {

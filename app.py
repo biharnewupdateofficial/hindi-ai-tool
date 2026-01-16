@@ -1,9 +1,10 @@
-from flask import Flask, render_template, request, session, redirect, Response
-import sqlite3, os
+from flask import Flask, render_template, request, session, redirect, Response, jsonify
+import sqlite3, os, io
 from openai import OpenAI
+from PyPDF2 import PdfReader
 
 app = Flask(__name__)
-app.secret_key = "opentutor-history-final"
+app.secret_key = "opentutor-super-final"
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
@@ -11,7 +12,8 @@ SYSTEM_PROMPT = """
 You are OpenTutor AI.
 Behave like ChatGPT + Google Gemini.
 Use simple Hindi mixed with English.
-Explain step by step when teaching.
+Explain step by step.
+If user asks for image, describe clearly.
 """
 
 # ---------- DATABASE ----------
@@ -66,13 +68,43 @@ def chat():
 def new_chat():
     if "user" in session:
         db = get_db()
-        db.execute(
-            "DELETE FROM chats WHERE username=?",
-            (session["user"],)
-        )
+        db.execute("DELETE FROM chats WHERE username=?", (session["user"],))
         db.commit()
     return redirect("/chat")
 
+# ---------- IMAGE GENERATION ----------
+@app.route("/image", methods=["POST"])
+def image():
+    prompt = request.json.get("prompt", "")
+    try:
+        img = client.images.generate(
+            model="gpt-image-1",
+            prompt=prompt,
+            size="1024x1024"
+        )
+        return jsonify({"url": img.data[0].url})
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+# ---------- FILE UPLOAD ----------
+@app.route("/upload", methods=["POST"])
+def upload():
+    file = request.files.get("file")
+    if not file:
+        return jsonify({"text": ""})
+
+    text = ""
+    if file.filename.endswith(".pdf"):
+        reader = PdfReader(file)
+        for page in reader.pages:
+            text += page.extract_text() or ""
+    else:
+        text = file.read().decode("utf-8")
+
+    session["file_text"] = text[:8000]
+    return jsonify({"text": "File loaded successfully"})
+
+# ---------- CHAT ----------
 @app.route("/ask", methods=["POST"])
 def ask():
     if "user" not in session:
@@ -90,6 +122,13 @@ def ask():
     db.commit()
 
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
+
+    if "file_text" in session:
+        messages.append({
+            "role": "system",
+            "content": f"User uploaded document content:\n{session['file_text']}"
+        })
+
     rows = db.execute(
         "SELECT role, content FROM chats WHERE username=?",
         (session["user"],)

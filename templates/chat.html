@@ -6,97 +6,72 @@
 
 <style>
 :root{
-    --bg:#f5f5f5;
-    --card:#ffffff;
-    --text:#000;
-    --user:#2563eb;
-    --ai:#e5e7eb;
+    --bg:#f5f5f5; --card:#fff; --text:#000;
+    --user:#2563eb; --ai:#e5e7eb;
 }
 .dark{
-    --bg:#0f172a;
-    --card:#1e293b;
-    --text:#f1f5f9;
-    --user:#3b82f6;
+    --bg:#0f172a; --card:#1e293b; --text:#f1f5f9;
     --ai:#334155;
 }
-*{box-sizing:border-box;font-family:Arial,sans-serif;}
+*{box-sizing:border-box;font-family:Arial}
 body{margin:0;background:var(--bg);color:var(--text);}
 .app{display:flex;height:100vh}
 
 /* Sidebar */
 .sidebar{
-    width:260px;
-    background:var(--card);
-    padding:15px;
-    border-right:1px solid #444;
+    width:260px;background:var(--card);
+    padding:10px;border-right:1px solid #444;
 }
-.sidebar h2{margin-top:0}
+.sidebar h2{margin:10px 0}
 .sidebar button{
-    width:100%;
-    padding:10px;
-    margin-bottom:10px;
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
+    width:100%;padding:10px;margin-bottom:8px;
+    border:none;border-radius:8px;cursor:pointer
 }
-.newchat{background:#22c55e;color:white}
+.new{background:#22c55e;color:white}
 .toggle{background:#6366f1;color:white}
 .logout{background:#ef4444;color:white}
+.chat-list{
+    margin-top:10px;overflow-y:auto;height:65vh
+}
+.chat-item{
+    padding:8px;border-radius:6px;
+    background:#ddd;margin-bottom:6px;
+    cursor:pointer
+}
+.dark .chat-item{background:#334155}
 
 /* Chat */
 .chat-area{flex:1;display:flex;flex-direction:column}
-.chat-header{
-    padding:15px;
-    background:var(--card);
-    border-bottom:1px solid #444;
-    font-weight:bold;
+.header{
+    padding:15px;background:var(--card);
+    border-bottom:1px solid #444;font-weight:bold
 }
 .chat-box{
-    flex:1;
-    padding:20px;
-    overflow-y:auto;
+    flex:1;padding:20px;overflow-y:auto
 }
 .user{
-    background:var(--user);
-    color:white;
-    padding:10px 14px;
-    border-radius:12px;
-    margin:8px 0;
-    max-width:70%;
-    margin-left:auto;
+    background:var(--user);color:white;
+    padding:10px;border-radius:12px;
+    max-width:70%;margin:8px 0;margin-left:auto
 }
 .ai{
-    background:var(--ai);
-    padding:10px 14px;
-    border-radius:12px;
-    margin:8px 0;
-    max-width:70%;
+    background:var(--ai);padding:10px;
+    border-radius:12px;max-width:70%;
+    margin:8px 0
 }
-.typing{
-    font-style:italic;
-    opacity:.7;
-}
+.typing{opacity:.7;font-style:italic}
 
 /* Input */
-.input-area{
-    display:flex;
-    padding:15px;
-    background:var(--card);
+.input{
+    display:flex;padding:15px;background:var(--card)
 }
 textarea{
-    flex:1;
-    resize:none;
-    padding:10px;
-    border-radius:8px;
-    border:none;
+    flex:1;padding:10px;border-radius:8px;border:none
 }
 .send{
-    margin-left:10px;
-    padding:0 20px;
-    border:none;
-    border-radius:8px;
-    background:#22c55e;
-    color:white;
+    margin-left:10px;padding:0 20px;
+    border:none;border-radius:8px;
+    background:#22c55e;color:white
 }
 </style>
 </head>
@@ -106,17 +81,17 @@ textarea{
 
 <div class="sidebar">
     <h2>🤖 OpenTutor AI</h2>
-    <button class="newchat" onclick="newChat()">➕ New Chat</button>
-    <button class="toggle" onclick="toggleMode()">🌗 Dark / Light</button>
+    <button class="new" onclick="newChat()">➕ New Chat</button>
+    <button class="toggle" onclick="toggle()">🌗 Dark / Light</button>
     <button class="logout" onclick="location.href='/logout'">🚪 Logout</button>
+    <div class="chat-list" id="chatList"></div>
 </div>
 
 <div class="chat-area">
-    <div class="chat-header">ChatGPT + Gemini Mode</div>
+    <div class="header">ChatGPT + Gemini Mode</div>
     <div id="chatBox" class="chat-box"></div>
-
-    <div class="input-area">
-        <textarea id="q" placeholder="Type your message..."></textarea>
+    <div class="input">
+        <textarea id="q" placeholder="Type message..."></textarea>
         <button class="send" onclick="send()">Send</button>
     </div>
 </div>
@@ -124,43 +99,80 @@ textarea{
 </div>
 
 <script>
-const chatBox=document.getElementById("chatBox");
-const input=document.getElementById("q");
-const body=document.body;
+let chats = JSON.parse(localStorage.getItem("chats")||"{}");
+let current = localStorage.getItem("current") || null;
+const chatBox = document.getElementById("chatBox");
+const list = document.getElementById("chatList");
+const input = document.getElementById("q");
 
 /* THEME */
-if(localStorage.getItem("theme")==="dark") body.classList.add("dark");
-function toggleMode(){
-    body.classList.toggle("dark");
-    localStorage.setItem("theme",body.classList.contains("dark")?"dark":"light");
+if(localStorage.getItem("theme")==="dark") document.body.classList.add("dark");
+function toggle(){
+    document.body.classList.toggle("dark");
+    localStorage.setItem("theme",
+        document.body.classList.contains("dark")?"dark":"light");
+}
+
+/* RENDER SIDEBAR */
+function renderList(){
+    list.innerHTML="";
+    Object.keys(chats).forEach(id=>{
+        let d=document.createElement("div");
+        d.className="chat-item";
+        d.innerText=chats[id].title;
+        d.onclick=()=>loadChat(id);
+        list.appendChild(d);
+    });
+}
+
+/* NEW CHAT */
+function newChat(){
+    let id="chat_"+Date.now();
+    chats[id]={title:"New Chat",messages:[]};
+    current=id;
+    save();
+    renderList();
+    loadChat(id);
 }
 
 /* LOAD CHAT */
-chatBox.innerHTML = localStorage.getItem("chat") || "";
-
-/* SAVE */
-function save(){ localStorage.setItem("chat",chatBox.innerHTML); }
+function loadChat(id){
+    current=id;
+    chatBox.innerHTML="";
+    chats[id].messages.forEach(m=>{
+        add(m.text,m.role,false);
+    });
+    save();
+}
 
 /* ADD MESSAGE */
-function addMsg(text,cls,id){
+function add(text,role,saveIt=true){
     let d=document.createElement("div");
-    d.className=cls;
-    if(id) d.id=id;
+    d.className=role;
     d.innerText=text;
     chatBox.appendChild(d);
     chatBox.scrollTop=chatBox.scrollHeight;
-    save();
+    if(saveIt){
+        chats[current].messages.push({text,role});
+        if(chats[current].messages.length===1)
+            chats[current].title=text.slice(0,20);
+        save();
+        renderList();
+    }
 }
 
 /* SEND */
 function send(){
     let q=input.value.trim();
     if(!q) return;
-    addMsg(q,"user");
+    add(q,"user");
     input.value="";
-    input.focus();
 
-    addMsg("AI likh raha hai…","ai typing","typing");
+    let t=document.createElement("div");
+    t.className="ai typing";
+    t.id="typing";
+    t.innerText="AI likh raha hai…";
+    chatBox.appendChild(t);
 
     fetch("/ask",{
         method:"POST",
@@ -169,25 +181,28 @@ function send(){
     })
     .then(r=>r.json())
     .then(d=>{
-        document.getElementById("typing")?.remove();
-        addMsg(d.answer,"ai");
+        document.getElementById("typing").remove();
+        add(d.answer,"ai");
     });
 }
 
 /* ENTER SEND */
 input.addEventListener("keydown",e=>{
     if(e.key==="Enter" && !e.shiftKey){
-        e.preventDefault();
-        send();
+        e.preventDefault();send();
     }
 });
 
-/* NEW CHAT */
-function newChat(){
-    chatBox.innerHTML="";
-    localStorage.removeItem("chat");
+/* SAVE */
+function save(){
+    localStorage.setItem("chats",JSON.stringify(chats));
+    localStorage.setItem("current",current);
 }
-</script>
 
+/* INIT */
+if(!current) newChat();
+else loadChat(current);
+renderList();
+</script>
 </body>
 </html>

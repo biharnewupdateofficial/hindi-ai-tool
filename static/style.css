@@ -1,6 +1,6 @@
 * {
     box-sizing: border-box;
-    font-family: system-ui, -apple-system, BlinkMacSystemFont;
+    font-family: system-ui, -apple-system;
 }
 
 body {
@@ -9,7 +9,6 @@ body {
     color: #e5e5e5;
 }
 
-/* Layout */
 .layout {
     display: flex;
     height: 100vh;
@@ -43,22 +42,6 @@ body {
     cursor: pointer;
 }
 
-.sidebar-header button:hover {
-    background: #16a06b;
-}
-
-#history {
-    flex: 1;
-    padding: 10px;
-    overflow-y: auto;
-}
-
-.history-title {
-    font-size: 13px;
-    color: #aaa;
-    margin-bottom: 8px;
-}
-
 .sidebar-footer {
     padding: 15px;
     border-top: 1px solid #444;
@@ -70,7 +53,7 @@ body {
     text-decoration: none;
 }
 
-/* Main chat */
+/* Main */
 .main {
     flex: 1;
     display: flex;
@@ -124,10 +107,6 @@ textarea {
     font-size: 16px;
 }
 
-textarea::placeholder {
-    color: #aaa;
-}
-
 button {
     width: 60px;
     border-radius: 10px;
@@ -136,8 +115,4 @@ button {
     border: none;
     font-size: 22px;
     cursor: pointer;
-}
-
-button:hover {
-    background: #16a06b;
 }

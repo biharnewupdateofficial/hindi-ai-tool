@@ -33,6 +33,7 @@
         </div>
 
         <div class="input-bar">
+            <button id="micBtn" onclick="startVoice()">🎤</button>
             <textarea id="question" placeholder="Send a message..."></textarea>
             <button onclick="sendQuestion()">➤</button>
         </div>
@@ -44,6 +45,7 @@
 const chatBox = document.getElementById("chat-box");
 const input = document.getElementById("question");
 
+/* ---------- SEND TEXT ---------- */
 function sendQuestion() {
     const question = input.value.trim();
     if (!question) return;
@@ -79,12 +81,42 @@ function sendQuestion() {
     });
 }
 
+/* ---------- ENTER KEY ---------- */
 input.addEventListener("keydown", function(e) {
     if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
         sendQuestion();
     }
 });
+
+/* ---------- VOICE INPUT ---------- */
+let recognition;
+function startVoice() {
+    if (!('webkitSpeechRecognition' in window)) {
+        alert("Voice input not supported in this browser");
+        return;
+    }
+
+    recognition = new webkitSpeechRecognition();
+    recognition.lang = "en-IN"; // Hindi + English mix
+    recognition.continuous = false;
+    recognition.interimResults = false;
+
+    recognition.onstart = () => {
+        document.getElementById("micBtn").innerText = "🎙️";
+    };
+
+    recognition.onresult = (event) => {
+        const speech = event.results[0][0].transcript;
+        input.value = speech;
+    };
+
+    recognition.onend = () => {
+        document.getElementById("micBtn").innerText = "🎤";
+    };
+
+    recognition.start();
+}
 </script>
 
 </body>

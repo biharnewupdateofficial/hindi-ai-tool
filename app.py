@@ -1,81 +1,56 @@
 from flask import Flask, render_template, request, redirect, session, jsonify
-import sqlite3
-import os
+import sqlite3, os
+from config import FEATURES
 
-# ✅ OpenAI safe import
 try:
     from openai import OpenAI
     client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-except Exception as e:
+except:
     client = None
-    print("OpenAI not loaded:", e)
 
 app = Flask(__name__)
-app.secret_key = "super-secret-key"
+app.secret_key = "opentutor-secret"
 
 DB = "database.db"
 
-# ---------- DATABASE ----------
-def get_db():
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    return conn
+def db():
+    c = sqlite3.connect(DB)
+    c.row_factory = sqlite3.Row
+    return c
 
-def init_db():
-    conn = get_db()
-    cur = conn.cursor()
+def init():
+    c = db()
+    cur = c.cursor()
+    cur.execute("CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY, username TEXT, password TEXT)")
+    cur.execute("CREATE TABLE IF NOT EXISTS chats(id INTEGER PRIMARY KEY, user_id INTEGER, role TEXT, text TEXT)")
+    c.commit()
+    c.close()
 
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE,
-        password TEXT
-    )
-    """)
-
-    cur.execute("""
-    CREATE TABLE IF NOT EXISTS chats (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_id INTEGER,
-        role TEXT,
-        text TEXT
-    )
-    """)
-
-    conn.commit()
-    conn.close()
-
-init_db()
-
-# ---------- ROUTES ----------
+init()
 
 @app.route("/")
 def home():
-    if "user_id" in session:
-        return redirect("/chat")
-    return redirect("/login")
+    return redirect("/chat") if "uid" in session else redirect("/login")
 
-@app.route("/login", methods=["GET", "POST"])
+@app.route("/login", methods=["GET","POST"])
 def login():
-    conn = get_db()
-    cur = conn.cursor()
+    c = db()
+    cur = c.cursor()
 
     if request.method == "POST":
         if "login" in request.form:
-            u = request.form["username"]
-            p = request.form["password"]
-            cur.execute("SELECT * FROM users WHERE username=? AND password=?", (u, p))
-            user = cur.fetchone()
-            if user:
-                session["user_id"] = user["id"]
+            u,p = request.form["username"], request.form["password"]
+            cur.execute("SELECT * FROM users WHERE username=? AND password=?", (u,p))
+            r = cur.fetchone()
+            if r:
+                session["uid"] = r["id"]
                 return redirect("/chat")
 
         if "signup" in request.form:
-            u = request.form["new_username"]
-            p = request.form["new_password"]
             try:
-                cur.execute("INSERT INTO users (username,password) VALUES (?,?)", (u, p))
-                conn.commit()
+                cur.execute("INSERT INTO users(username,password) VALUES(?,?)",
+                            (request.form["new_username"], request.form["new_password"]))
+                c.commit()
             except:
                 pass
 
@@ -83,43 +58,33 @@ def login():
 
 @app.route("/chat")
 def chat():
-    if "user_id" not in session:
-        return redirect("/login")
-
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("SELECT role,text FROM chats WHERE user_id=?", (session["user_id"],))
-    messages = cur.fetchall()
-    return render_template("chat.html", messages=messages)
+    if "uid" not in session: return redirect("/login")
+    cur = db().cursor()
+    cur.execute("SELECT role,text FROM chats WHERE user_id=?", (session["uid"],))
+    return render_template("chat.html", messages=cur.fetchall(), features=FEATURES)
 
 @app.route("/ask", methods=["POST"])
 def ask():
-    if client is None:
-        return jsonify({"answer": "❌ AI service unavailable"})
+    if not FEATURES["CHAT"] or client is None:
+        return jsonify({"answer":"AI unavailable"})
 
-    data = request.json
-    q = data.get("question")
-
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute("INSERT INTO chats (user_id,role,text) VALUES (?,?,?)",
-                (session["user_id"], "user", q))
-    conn.commit()
+    q = request.json.get("question")
+    cur = db().cursor()
+    cur.execute("INSERT INTO chats(user_id,role,text) VALUES(?,?,?)", (session["uid"],"user",q))
+    db().commit()
 
     try:
-        res = client.chat.completions.create(
+        r = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[{"role": "user", "content": q}]
+            messages=[{"role":"user","content":q}]
         )
-        ans = res.choices[0].message.content
+        ans = r.choices[0].message.content
     except Exception as e:
-        ans = "Error: " + str(e)
+        ans = str(e)
 
-    cur.execute("INSERT INTO chats (user_id,role,text) VALUES (?,?,?)",
-                (session["user_id"], "assistant", ans))
-    conn.commit()
-
-    return jsonify({"answer": ans})
+    cur.execute("INSERT INTO chats(user_id,role,text) VALUES(?,?,?)", (session["uid"],"assistant",ans))
+    db().commit()
+    return jsonify({"answer":ans})
 
 @app.route("/logout")
 def logout():
@@ -127,4 +92,4 @@ def logout():
     return redirect("/login")
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()

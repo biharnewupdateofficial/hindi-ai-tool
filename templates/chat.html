@@ -4,77 +4,34 @@
 <title>OpenTutor AI</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
+<body class="dark">
 
-<div class="app">
-  <div class="header">
-    🤖 OpenTutor AI
-    <label style="float:right">
-      🔊 Speak
-      <input type="checkbox" id="voiceToggle" checked>
-    </label>
+<header>
+  <h2>🤖 OpenTutor AI</h2>
+  <div class="modes">
+    <span>ChatGPT</span>
+    {% if features.GEMINI_STYLE %}<span>Gemini</span>{% endif %}
   </div>
+</header>
 
-  <div id="chat">
-    {% for r,m in chats %}
-      <div class="{{r}} ai-msg">{{m}}</div>
-    {% endfor %}
-  </div>
+<div id="chat">
+  {% for m in messages %}
+    <div class="{{ m.role }}">{{ m.text }}</div>
+  {% endfor %}
+</div>
 
-  <div class="input">
-    <button onclick="mic()">🎤</button>
-    <textarea id="q" placeholder="Type or say..."></textarea>
-    <button onclick="send()">Send</button>
-  </div>
-
-  <p style="font-size:14px">
-    🖼️ Image ke liye likho: <b>image: ek sher jungle me</b>
-  </p>
+<div class="input">
+  <textarea id="q" placeholder="Type your question..."></textarea>
+  <button onclick="send()">Send</button>
 </div>
 
 <script>
-let speakOn = true;
-
-document.getElementById("voiceToggle").onchange = e=>{
-  speakOn = e.target.checked;
-};
-
-// SEND MESSAGE
 function send(){
-  let q = document.getElementById("q").value.trim();
-  if(!q) return;
-
-  fetch("/ask",{
-    method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({question:q})
-  })
-  .then(r=>r.json())
-  .then(d=>{
-    location.reload();
-    if(speakOn){
-      speak(d.answer);
-    }
-  });
-}
-
-// 🎤 Voice to Text
-function mic(){
-  let r = new(window.SpeechRecognition||webkitSpeechRecognition)();
-  r.lang="hi-IN";
-  r.onresult=e=>{
-    document.getElementById("q").value=e.results[0][0].transcript;
-  };
-  r.start();
-}
-
-// 🔊 Text to Speech
-function speak(text){
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang="hi-IN";
-  speechSynthesis.speak(u);
+  let q=document.getElementById("q").value;
+  fetch("/ask",{method:"POST",headers:{"Content-Type":"application/json"},
+  body:JSON.stringify({question:q})})
+  .then(r=>r.json()).then(d=>location.reload())
 }
 </script>
-
 </body>
 </html>

@@ -1,9 +1,12 @@
-body{background:#0f172a;color:white;font-family:Arial}
-.app{max-width:900px;margin:auto;padding:20px}
-.header{font-size:22px;margin-bottom:10px}
-#chat{height:60vh;overflow:auto;background:#020617;padding:10px;border-radius:10px}
-.user{background:#2563eb;padding:10px;margin:6px 0;text-align:right;border-radius:10px}
-.ai{background:#1e293b;padding:10px;margin:6px 0;border-radius:10px}
-.input{display:flex;gap:10px;margin-top:10px}
-textarea{flex:1;padding:10px;border-radius:10px}
-button{padding:10px;border-radius:10px;cursor:pointer}
+body.dark{
+  background:#1e1e1e;
+  color:#fff;
+  font-family:Arial;
+}
+header{padding:10px;border-bottom:1px solid #333}
+#chat{padding:20px}
+.user{background:#2563eb;padding:10px;border-radius:10px;margin:5px;text-align:right}
+.assistant{background:#333;padding:10px;border-radius:10px;margin:5px}
+.input{position:fixed;bottom:0;width:100%;display:flex}
+textarea{flex:1;padding:10px}
+button{background:#22c55e;color:#000;padding:10px}

@@ -1,46 +1,22 @@
-body.dark{
-  background:#1e1e1e;
-  color:#fff;
-  font-family:Arial;
-}
-header{
-  padding:12px;
-  border-bottom:1px solid #333;
-  display:flex;
-  justify-content:space-between;
-}
-#chat{padding:20px;margin-bottom:70px}
-.user{
-  background:#2563eb;
-  padding:10px;
-  border-radius:12px;
-  margin:8px;
-  text-align:right;
-}
+body.dark{background:#1e1e1e;color:#fff;font-family:sans-serif}
+header{display:flex;justify-content:space-between;padding:10px}
+#chat{padding:20px}
+.user{background:#2563eb;padding:10px;margin:6px;border-radius:10px;text-align:right}
 .assistant{
   background:#333;
   padding:10px;
-  border-radius:12px;
-  margin:8px;
+  margin:6px;
+  border-radius:10px;
+  animation: pulse 1.2s infinite;
+}
+@keyframes pulse{
+  0%{opacity:.6}
+  50%{opacity:1}
+  100%{opacity:.6}
 }
 .input{
-  position:fixed;
-  bottom:0;
-  width:100%;
-  display:flex;
-  gap:6px;
-  padding:10px;
-  background:#111;
+  position:fixed;bottom:0;width:100%;
+  display:flex;gap:6px;padding:10px;background:#111
 }
-textarea{
-  flex:1;
-  padding:10px;
-  border-radius:8px;
-}
-button{
-  background:#22c55e;
-  border:none;
-  padding:10px;
-  border-radius:8px;
-  cursor:pointer;
-}
+textarea{flex:1;border-radius:8px;padding:8px}
+button{background:#22c55e;border:none;border-radius:8px;padding:8px}

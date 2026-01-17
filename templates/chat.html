@@ -4,20 +4,25 @@
 <title>OpenTutor AI</title>
 <link rel="stylesheet" href="/static/style.css">
 </head>
+
 <body class="dark">
 
 <header>
   <h2>🤖 OpenTutor AI</h2>
   <div class="modes">
-    <span>ChatGPT</span>
-    <span>Gemini</span>
+    <button onclick="toggleVoice()">🔊 Voice</button>
   </div>
 </header>
 
 <div id="chat">
-  {% for m in messages %}
-    <div class="{{ m.role }}">{{ m.text }}</div>
-  {% endfor %}
+{% for m in messages %}
+  <div class="{{ m.role }}">{{ m.text }}</div>
+  {% if m.role == 'assistant' %}
+  <script>
+    speak(`{{ m.text | safe }}`);
+  </script>
+  {% endif %}
+{% endfor %}
 </div>
 
 <div class="input">
@@ -27,6 +32,20 @@
 </div>
 
 <script>
+let voiceOn = true;
+
+function toggleVoice(){
+  voiceOn = !voiceOn;
+  alert("Voice " + (voiceOn ? "ON" : "OFF"));
+}
+
+function speak(text){
+  if(!voiceOn) return;
+  let msg = new SpeechSynthesisUtterance(text);
+  msg.lang="hi-IN";
+  speechSynthesis.speak(msg);
+}
+
 function send(){
   let q=document.getElementById("q").value;
   if(!q) return;
@@ -37,15 +56,11 @@ function send(){
 }
 
 function startVoice(){
-  if(!('webkitSpeechRecognition' in window)){
-    alert("Voice not supported");
-    return;
-  }
   let rec = new webkitSpeechRecognition();
   rec.lang="hi-IN";
-  rec.onresult = e=>{
-    document.getElementById("q").value = e.results[0][0].transcript;
-  };
+  rec.onresult=e=>{
+    document.getElementById("q").value=e.results[0][0].transcript;
+  }
   rec.start();
 }
 </script>

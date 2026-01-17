@@ -9,7 +9,17 @@
 <div class="app">
     <div class="header">
         🤖 OpenTutor AI
-        <span style="float:right"><a href="/logout" style="color:#22c55e">Logout</a></span>
+        <span style="float:right">
+            <a href="/logout" style="color:#22c55e">Logout</a>
+        </span>
+    </div>
+
+    <!-- 🔥 Gemini style suggestions -->
+    <div class="suggestions">
+        <button onclick="quick('Class 10 ka quadratic equation samjhao')">📘 Quadratic Equation</button>
+        <button onclick="quick('Bihar ke baare me batao')">🌍 Bihar</button>
+        <button onclick="quick('Resume ka format bana do')">📄 Resume</button>
+        <button onclick="quick('Image banane ke liye prompt likho')">🖼️ Image Prompt</button>
     </div>
 
     <div class="chat-box" id="chat">
@@ -36,6 +46,11 @@ function send(){
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({question:q.value})
     }).then(()=>location.reload());
+}
+
+function quick(text){
+    document.getElementById("q").value = text;
+    send();
 }
 </script>
 

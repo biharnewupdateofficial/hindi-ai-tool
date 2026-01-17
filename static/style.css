@@ -14,14 +14,35 @@ body {
 .header {
     font-size: 22px;
     font-weight: bold;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
+}
+
+.suggestions {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 10px;
+}
+
+.suggestions button {
+    background: #1e293b;
+    color: #e5e7eb;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.suggestions button:hover {
+    background: #2563eb;
 }
 
 .chat-box {
     background: #020617;
     border-radius: 12px;
     padding: 15px;
-    height: 65vh;
+    height: 60vh;
     overflow-y: auto;
 }
 

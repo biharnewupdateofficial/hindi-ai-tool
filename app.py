@@ -1,110 +1,95 @@
 from flask import Flask, render_template, request, redirect, session, jsonify
-import sqlite3
+import sqlite3, os
+from openai import OpenAI
 
 app = Flask(__name__)
 app.secret_key = "opentutor_secret"
 
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 DB = "database.db"
 
-# ======================
-# DATABASE AUTO CREATE
-# ======================
+# ---------- DB ----------
 def init_db():
-    conn = sqlite3.connect(DB)
-    c = conn.cursor()
-
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS users (
+    db = sqlite3.connect(DB)
+    c = db.cursor()
+    c.execute("""CREATE TABLE IF NOT EXISTS users(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
         password TEXT
-    )
-    """)
-
-    c.execute("""
-    CREATE TABLE IF NOT EXISTS chats (
+    )""")
+    c.execute("""CREATE TABLE IF NOT EXISTS chats(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
         role TEXT,
         message TEXT
-    )
-    """)
-
-    conn.commit()
-    conn.close()
+    )""")
+    db.commit()
+    db.close()
 
 init_db()
 
-# ======================
-# ROUTES
-# ======================
-
+# ---------- ROUTES ----------
 @app.route("/")
 def home():
-    if "user_id" in session:
-        return redirect("/chat")
     return redirect("/login")
 
 @app.route("/login", methods=["GET","POST"])
 def login():
-    conn = sqlite3.connect(DB)
-    c = conn.cursor()
-
     if request.method == "POST":
-        action = request.form.get("action")
-        username = request.form.get("username")
-        password = request.form.get("password")
-
-        if action == "login":
-            c.execute("SELECT id FROM users WHERE username=? AND password=?", (username,password))
-            user = c.fetchone()
-            if user:
-                session["user_id"] = user[0]
-                conn.close()
-                return redirect("/chat")
-
-        if action == "signup":
-            try:
-                c.execute("INSERT INTO users (username,password) VALUES (?,?)",(username,password))
-                conn.commit()
-            except:
-                pass
-
-    conn.close()
+        u = request.form["username"]
+        p = request.form["password"]
+        db = sqlite3.connect(DB)
+        c = db.cursor()
+        c.execute("SELECT id FROM users WHERE username=? AND password=?", (u,p))
+        r = c.fetchone()
+        if r:
+            session["uid"] = r[0]
+            return redirect("/chat")
+        try:
+            c.execute("INSERT INTO users(username,password) VALUES (?,?)",(u,p))
+            db.commit()
+            session["uid"] = c.lastrowid
+            return redirect("/chat")
+        except:
+            pass
     return render_template("login.html")
 
 @app.route("/chat")
 def chat():
-    if "user_id" not in session:
+    if "uid" not in session:
         return redirect("/login")
-
-    conn = sqlite3.connect(DB)
-    c = conn.cursor()
-    c.execute("SELECT role,message FROM chats WHERE user_id=?", (session["user_id"],))
+    db = sqlite3.connect(DB)
+    c = db.cursor()
+    c.execute("SELECT role,message FROM chats WHERE user_id=?", (session["uid"],))
     chats = c.fetchall()
-    conn.close()
-
     return render_template("chat.html", chats=chats)
 
 @app.route("/ask", methods=["POST"])
 def ask():
-    if "user_id" not in session:
-        return jsonify({"answer":"Login first"})
+    q = request.json["question"]
 
-    q = request.json.get("question")
+    # IMAGE REQUEST
+    if q.lower().startswith("image:"):
+        img = client.images.generate(
+            model="gpt-image-1",
+            prompt=q.replace("image:",""),
+            size="512x512"
+        )
+        ans = img.data[0].url
+    else:
+        res = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[{"role":"user","content":q}]
+        )
+        ans = res.choices[0].message.content
 
-    a = f"आपने पूछा: {q}\n\n(OpenTutor AI demo response)"
+    db = sqlite3.connect(DB)
+    c = db.cursor()
+    c.execute("INSERT INTO chats(user_id,role,message) VALUES (?,?,?)",(session["uid"],"user",q))
+    c.execute("INSERT INTO chats(user_id,role,message) VALUES (?,?,?)",(session["uid"],"ai",ans))
+    db.commit()
 
-    conn = sqlite3.connect(DB)
-    c = conn.cursor()
-
-    c.execute("INSERT INTO chats (user_id,role,message) VALUES (?,?,?)",(session["user_id"],"user",q))
-    c.execute("INSERT INTO chats (user_id,role,message) VALUES (?,?,?)",(session["user_id"],"ai",a))
-
-    conn.commit()
-    conn.close()
-
-    return jsonify({"answer":a})
+    return jsonify({"answer":ans})
 
 @app.route("/logout")
 def logout():

@@ -1,85 +1,44 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>OpenTutor AI</title>
-    <link rel="stylesheet" href="/static/style.css">
+<title>OpenTutor AI</title>
+<link rel="stylesheet" href="/static/style.css">
 </head>
-<body class="dark">
+<body>
 
 <div class="app">
-    <div class="header">
-        🤖 OpenTutor AI
-        <div class="top-actions">
-            <button onclick="toggleMode()">🌗</button>
-            <a href="/logout">Logout</a>
-        </div>
-    </div>
+<h2>🤖 OpenTutor AI</h2>
 
-    <!-- Suggestions -->
-    <div class="suggestions">
-        <button onclick="quick('Class 10 ka quadratic equation samjhao')">📘 Math</button>
-        <button onclick="quick('Bihar ke baare me batao')">🌍 Bihar</button>
-        <button onclick="quick('Resume bana do')">📄 Resume</button>
-        <button onclick="quick('Ek sher ki image banao')">🖼️ Image</button>
-    </div>
-
-    <!-- Chat -->
-    <div class="chat-box" id="chat">
-        {% for c in chats %}
-            <div class="msg {{ c.role }}">{{ c.message }}</div>
-        {% endfor %}
-    </div>
-
-    <!-- Input -->
-    <div class="input-area">
-        <button onclick="startMic()">🎤</button>
-        <textarea id="q" placeholder="Apna sawal likhiye..."></textarea>
-        <button onclick="send()">Send</button>
-    </div>
+<div id="chat">
+{% for r,m in chats %}
+<div class="{{r}}">{{m}}</div>
+{% endfor %}
 </div>
+
+<div class="input">
+<button onclick="mic()">🎤</button>
+<textarea id="q" placeholder="Type or say..."></textarea>
+<button onclick="send()">Send</button>
+</div>
+
+<p>🖼️ Image ke liye likho: <b>image: ek sher jungle me</b></p>
 
 <script>
 function send(){
-    let q = document.getElementById("q");
-    if(!q.value.trim()) return;
-
-    fetch("/ask",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({question:q.value})
-    }).then(()=>location.reload());
+ let q=document.getElementById("q").value;
+ fetch("/ask",{
+   method:"POST",
+   headers:{"Content-Type":"application/json"},
+   body:JSON.stringify({question:q})
+ }).then(()=>location.reload())
 }
 
-function quick(text){
-    document.getElementById("q").value = text;
-    send();
+function mic(){
+ let r=new(window.SpeechRecognition||webkitSpeechRecognition)();
+ r.lang="hi-IN";
+ r.onresult=e=>document.getElementById("q").value=e.results[0][0].transcript;
+ r.start();
 }
-
-/* 🎤 Voice to Text */
-function startMic(){
-    const rec = new(window.SpeechRecognition || window.webkitSpeechRecognition)();
-    rec.lang = "hi-IN";
-    rec.onresult = e => {
-        document.getElementById("q").value = e.results[0][0].transcript;
-    };
-    rec.start();
-}
-
-/* 🌗 Dark / Light */
-function toggleMode(){
-    document.body.classList.toggle("light");
-}
-
-/* ⚡ Typing Effect (basic) */
-document.querySelectorAll(".ai").forEach(el=>{
-    let text = el.innerText;
-    el.innerText = "";
-    let i = 0;
-    let t = setInterval(()=>{
-        el.innerText += text[i++];
-        if(i >= text.length) clearInterval(t);
-    },15);
-});
 </script>
 
 </body>

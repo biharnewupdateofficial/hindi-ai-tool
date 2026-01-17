@@ -31,3 +31,21 @@ def ask():
 
     except Exception as e:
         return jsonify({"answer":f"AI Error: {str(e)}"})
+@app.route("/image", methods=["POST"])
+def image_generate():
+    if "user" not in session:
+        return jsonify({"error": "Login required"})
+
+    prompt = request.json.get("prompt", "")
+
+    try:
+        img = client.images.generate(
+            model="gpt-image-1",
+            prompt=prompt,
+            size="1024x1024"
+        )
+        return jsonify({"image_url": img.data[0].url})
+
+    except Exception as e:
+        return jsonify({"error": str(e)})
+

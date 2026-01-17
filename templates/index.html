@@ -17,6 +17,28 @@
 <textarea id="question" placeholder="Apna sawal likhiye..."></textarea>
 <button onclick="sendMessage()">Send</button>
 <button onclick="clearChat()">New Chat</button>
+<button onclick="generateImage()">🖼 Image Banao</button>
+
+<script>
+function generateImage(){
+    let prompt = document.getElementById("question").value;
+
+    fetch("/image",{
+        method:"POST",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({prompt:prompt})
+    })
+    .then(res=>res.json())
+    .then(data=>{
+        if(data.image_url){
+            let img = document.createElement("img");
+            img.src = data.image_url;
+            img.style.maxWidth = "100%";
+            document.getElementById("chat-box").appendChild(img);
+        }
+    });
+}
+</script>
 
 <hr>
 

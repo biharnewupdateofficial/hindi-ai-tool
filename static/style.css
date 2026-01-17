@@ -3,10 +3,44 @@ body.dark{
   color:#fff;
   font-family:Arial;
 }
-header{padding:10px;border-bottom:1px solid #333}
-#chat{padding:20px}
-.user{background:#2563eb;padding:10px;border-radius:10px;margin:5px;text-align:right}
-.assistant{background:#333;padding:10px;border-radius:10px;margin:5px}
-.input{position:fixed;bottom:0;width:100%;display:flex}
-textarea{flex:1;padding:10px}
-button{background:#22c55e;color:#000;padding:10px}
+header{
+  padding:12px;
+  border-bottom:1px solid #333;
+  display:flex;
+  justify-content:space-between;
+}
+#chat{padding:20px;margin-bottom:70px}
+.user{
+  background:#2563eb;
+  padding:10px;
+  border-radius:12px;
+  margin:8px;
+  text-align:right;
+}
+.assistant{
+  background:#333;
+  padding:10px;
+  border-radius:12px;
+  margin:8px;
+}
+.input{
+  position:fixed;
+  bottom:0;
+  width:100%;
+  display:flex;
+  gap:6px;
+  padding:10px;
+  background:#111;
+}
+textarea{
+  flex:1;
+  padding:10px;
+  border-radius:8px;
+}
+button{
+  background:#22c55e;
+  border:none;
+  padding:10px;
+  border-radius:8px;
+  cursor:pointer;
+}

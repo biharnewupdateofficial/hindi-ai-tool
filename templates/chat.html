@@ -10,7 +10,7 @@
   <h2>🤖 OpenTutor AI</h2>
   <div class="modes">
     <span>ChatGPT</span>
-    {% if features.GEMINI_STYLE %}<span>Gemini</span>{% endif %}
+    <span>Gemini</span>
   </div>
 </header>
 
@@ -21,17 +21,34 @@
 </div>
 
 <div class="input">
-  <textarea id="q" placeholder="Type your question..."></textarea>
+  <textarea id="q" placeholder="Type or Speak..."></textarea>
+  <button onclick="startVoice()">🎙</button>
   <button onclick="send()">Send</button>
 </div>
 
 <script>
 function send(){
   let q=document.getElementById("q").value;
-  fetch("/ask",{method:"POST",headers:{"Content-Type":"application/json"},
-  body:JSON.stringify({question:q})})
-  .then(r=>r.json()).then(d=>location.reload())
+  if(!q) return;
+  fetch("/ask",{method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({question:q})
+  }).then(()=>location.reload());
+}
+
+function startVoice(){
+  if(!('webkitSpeechRecognition' in window)){
+    alert("Voice not supported");
+    return;
+  }
+  let rec = new webkitSpeechRecognition();
+  rec.lang="hi-IN";
+  rec.onresult = e=>{
+    document.getElementById("q").value = e.results[0][0].transcript;
+  };
+  rec.start();
 }
 </script>
+
 </body>
 </html>

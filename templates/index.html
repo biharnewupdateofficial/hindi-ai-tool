@@ -18,6 +18,19 @@
 <button onclick="sendMessage()">Send</button>
 <button onclick="clearChat()">New Chat</button>
 <button onclick="generateImage()">🖼 Image Banao</button>
+<button onclick="startVoice()">🎤</button>
+
+<script>
+function startVoice(){
+    let rec = new(window.SpeechRecognition || window.webkitSpeechRecognition)();
+    rec.lang = "hi-IN";
+    rec.start();
+
+    rec.onresult = function(e){
+        document.getElementById("question").value = e.results[0][0].transcript;
+    }
+}
+</script>
 
 <script>
 function generateImage(){

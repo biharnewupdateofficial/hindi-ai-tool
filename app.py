@@ -1,95 +1,125 @@
 from flask import Flask, render_template, request, redirect, session, jsonify
-import sqlite3, os
-from openai import OpenAI
+import sqlite3
+import os
+
+# ✅ OpenAI safe import
+try:
+    from openai import OpenAI
+    client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+except Exception as e:
+    client = None
+    print("OpenAI not loaded:", e)
 
 app = Flask(__name__)
-app.secret_key = "opentutor_secret"
+app.secret_key = "super-secret-key"
 
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 DB = "database.db"
 
-# ---------- DB ----------
+# ---------- DATABASE ----------
+def get_db():
+    conn = sqlite3.connect(DB)
+    conn.row_factory = sqlite3.Row
+    return conn
+
 def init_db():
-    db = sqlite3.connect(DB)
-    c = db.cursor()
-    c.execute("""CREATE TABLE IF NOT EXISTS users(
+    conn = get_db()
+    cur = conn.cursor()
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         username TEXT UNIQUE,
         password TEXT
-    )""")
-    c.execute("""CREATE TABLE IF NOT EXISTS chats(
+    )
+    """)
+
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS chats (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
         role TEXT,
-        message TEXT
-    )""")
-    db.commit()
-    db.close()
+        text TEXT
+    )
+    """)
+
+    conn.commit()
+    conn.close()
 
 init_db()
 
 # ---------- ROUTES ----------
+
 @app.route("/")
 def home():
+    if "user_id" in session:
+        return redirect("/chat")
     return redirect("/login")
 
-@app.route("/login", methods=["GET","POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
+    conn = get_db()
+    cur = conn.cursor()
+
     if request.method == "POST":
-        u = request.form["username"]
-        p = request.form["password"]
-        db = sqlite3.connect(DB)
-        c = db.cursor()
-        c.execute("SELECT id FROM users WHERE username=? AND password=?", (u,p))
-        r = c.fetchone()
-        if r:
-            session["uid"] = r[0]
-            return redirect("/chat")
-        try:
-            c.execute("INSERT INTO users(username,password) VALUES (?,?)",(u,p))
-            db.commit()
-            session["uid"] = c.lastrowid
-            return redirect("/chat")
-        except:
-            pass
+        if "login" in request.form:
+            u = request.form["username"]
+            p = request.form["password"]
+            cur.execute("SELECT * FROM users WHERE username=? AND password=?", (u, p))
+            user = cur.fetchone()
+            if user:
+                session["user_id"] = user["id"]
+                return redirect("/chat")
+
+        if "signup" in request.form:
+            u = request.form["new_username"]
+            p = request.form["new_password"]
+            try:
+                cur.execute("INSERT INTO users (username,password) VALUES (?,?)", (u, p))
+                conn.commit()
+            except:
+                pass
+
     return render_template("login.html")
 
 @app.route("/chat")
 def chat():
-    if "uid" not in session:
+    if "user_id" not in session:
         return redirect("/login")
-    db = sqlite3.connect(DB)
-    c = db.cursor()
-    c.execute("SELECT role,message FROM chats WHERE user_id=?", (session["uid"],))
-    chats = c.fetchall()
-    return render_template("chat.html", chats=chats)
+
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT role,text FROM chats WHERE user_id=?", (session["user_id"],))
+    messages = cur.fetchall()
+    return render_template("chat.html", messages=messages)
 
 @app.route("/ask", methods=["POST"])
 def ask():
-    q = request.json["question"]
+    if client is None:
+        return jsonify({"answer": "❌ AI service unavailable"})
 
-    # IMAGE REQUEST
-    if q.lower().startswith("image:"):
-        img = client.images.generate(
-            model="gpt-image-1",
-            prompt=q.replace("image:",""),
-            size="512x512"
-        )
-        ans = img.data[0].url
-    else:
+    data = request.json
+    q = data.get("question")
+
+    conn = get_db()
+    cur = conn.cursor()
+    cur.execute("INSERT INTO chats (user_id,role,text) VALUES (?,?,?)",
+                (session["user_id"], "user", q))
+    conn.commit()
+
+    try:
         res = client.chat.completions.create(
             model="gpt-4o-mini",
-            messages=[{"role":"user","content":q}]
+            messages=[{"role": "user", "content": q}]
         )
         ans = res.choices[0].message.content
+    except Exception as e:
+        ans = "Error: " + str(e)
 
-    db = sqlite3.connect(DB)
-    c = db.cursor()
-    c.execute("INSERT INTO chats(user_id,role,message) VALUES (?,?,?)",(session["uid"],"user",q))
-    c.execute("INSERT INTO chats(user_id,role,message) VALUES (?,?,?)",(session["uid"],"ai",ans))
-    db.commit()
+    cur.execute("INSERT INTO chats (user_id,role,text) VALUES (?,?,?)",
+                (session["user_id"], "assistant", ans))
+    conn.commit()
 
-    return jsonify({"answer":ans})
+    return jsonify({"answer": ans})
 
 @app.route("/logout")
 def logout():
@@ -97,4 +127,4 @@ def logout():
     return redirect("/login")
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)

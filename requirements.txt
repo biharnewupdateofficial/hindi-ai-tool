@@ -1,4 +1,6 @@
 flask
-requests
-PyPDF2
 gunicorn
+openai
+python-dotenv
+requests
+sqlite-utils

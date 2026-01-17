@@ -4,34 +4,36 @@
     <title>OpenTutor AI</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
-<body>
+<body class="dark">
 
 <div class="app">
     <div class="header">
         🤖 OpenTutor AI
-        <span style="float:right">
-            <a href="/logout" style="color:#22c55e">Logout</a>
-        </span>
+        <div class="top-actions">
+            <button onclick="toggleMode()">🌗</button>
+            <a href="/logout">Logout</a>
+        </div>
     </div>
 
-    <!-- 🔥 Gemini style suggestions -->
+    <!-- Suggestions -->
     <div class="suggestions">
-        <button onclick="quick('Class 10 ka quadratic equation samjhao')">📘 Quadratic Equation</button>
+        <button onclick="quick('Class 10 ka quadratic equation samjhao')">📘 Math</button>
         <button onclick="quick('Bihar ke baare me batao')">🌍 Bihar</button>
-        <button onclick="quick('Resume ka format bana do')">📄 Resume</button>
-        <button onclick="quick('Image banane ke liye prompt likho')">🖼️ Image Prompt</button>
+        <button onclick="quick('Resume bana do')">📄 Resume</button>
+        <button onclick="quick('Ek sher ki image banao')">🖼️ Image</button>
     </div>
 
+    <!-- Chat -->
     <div class="chat-box" id="chat">
         {% for c in chats %}
-            <div class="msg {{ c.role }}">
-                {{ c.message }}
-            </div>
+            <div class="msg {{ c.role }}">{{ c.message }}</div>
         {% endfor %}
     </div>
 
+    <!-- Input -->
     <div class="input-area">
-        <textarea id="q" rows="2" placeholder="Apna sawal yahan likhiye..."></textarea>
+        <button onclick="startMic()">🎤</button>
+        <textarea id="q" placeholder="Apna sawal likhiye..."></textarea>
         <button onclick="send()">Send</button>
     </div>
 </div>
@@ -52,6 +54,32 @@ function quick(text){
     document.getElementById("q").value = text;
     send();
 }
+
+/* 🎤 Voice to Text */
+function startMic(){
+    const rec = new(window.SpeechRecognition || window.webkitSpeechRecognition)();
+    rec.lang = "hi-IN";
+    rec.onresult = e => {
+        document.getElementById("q").value = e.results[0][0].transcript;
+    };
+    rec.start();
+}
+
+/* 🌗 Dark / Light */
+function toggleMode(){
+    document.body.classList.toggle("light");
+}
+
+/* ⚡ Typing Effect (basic) */
+document.querySelectorAll(".ai").forEach(el=>{
+    let text = el.innerText;
+    el.innerText = "";
+    let i = 0;
+    let t = setInterval(()=>{
+        el.innerText += text[i++];
+        if(i >= text.length) clearInterval(t);
+    },15);
+});
 </script>
 
 </body>

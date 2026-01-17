@@ -1,92 +1,91 @@
 body {
-    margin: 0;
-    font-family: Arial, Helvetica, sans-serif;
-    background: #0f172a;
-    color: #e5e7eb;
+    margin:0;
+    font-family: Arial;
+    transition: 0.3s;
+}
+
+body.dark {
+    background:#0f172a;
+    color:#e5e7eb;
+}
+
+body.light {
+    background:#f9fafb;
+    color:#111827;
 }
 
 .app {
-    max-width: 900px;
-    margin: auto;
-    padding: 20px;
+    max-width:900px;
+    margin:auto;
+    padding:20px;
 }
 
 .header {
-    font-size: 22px;
-    font-weight: bold;
-    margin-bottom: 10px;
+    font-size:22px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+}
+
+.top-actions button,
+.top-actions a {
+    margin-left:10px;
 }
 
 .suggestions {
-    display: flex;
-    gap: 10px;
-    flex-wrap: wrap;
-    margin-bottom: 10px;
+    display:flex;
+    gap:10px;
+    flex-wrap:wrap;
+    margin:10px 0;
 }
 
 .suggestions button {
-    background: #1e293b;
-    color: #e5e7eb;
-    border: none;
-    padding: 8px 12px;
-    border-radius: 20px;
-    cursor: pointer;
-    font-size: 14px;
-}
-
-.suggestions button:hover {
-    background: #2563eb;
+    padding:8px 12px;
+    border-radius:20px;
+    border:none;
+    cursor:pointer;
 }
 
 .chat-box {
-    background: #020617;
-    border-radius: 12px;
-    padding: 15px;
-    height: 60vh;
-    overflow-y: auto;
+    height:60vh;
+    overflow-y:auto;
+    background:#020617;
+    padding:15px;
+    border-radius:12px;
 }
 
 .msg {
-    max-width: 75%;
-    padding: 12px 14px;
-    margin: 10px 0;
-    border-radius: 12px;
-    line-height: 1.4;
+    padding:12px;
+    margin:10px 0;
+    border-radius:12px;
+    max-width:75%;
 }
 
 .user {
-    background: #2563eb;
-    margin-left: auto;
-    text-align: right;
+    background:#2563eb;
+    margin-left:auto;
 }
 
 .ai {
-    background: #1e293b;
-    margin-right: auto;
+    background:#1e293b;
 }
 
 .input-area {
-    display: flex;
-    margin-top: 10px;
-    gap: 10px;
+    display:flex;
+    gap:10px;
+    margin-top:10px;
 }
 
 textarea {
-    flex: 1;
-    resize: none;
-    padding: 12px;
-    border-radius: 10px;
-    border: none;
-    outline: none;
-    font-size: 15px;
+    flex:1;
+    padding:10px;
+    border-radius:10px;
+    resize:none;
 }
 
 button {
-    background: #22c55e;
-    border: none;
-    border-radius: 10px;
-    padding: 0 20px;
-    font-size: 16px;
-    cursor: pointer;
-    font-weight: bold;
+    padding:10px 15px;
+    border:none;
+    border-radius:10px;
+    cursor:pointer;
 }

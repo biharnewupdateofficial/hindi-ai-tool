@@ -2,28 +2,26 @@ from flask import Flask, render_template, request, redirect, session, jsonify
 import sqlite3
 
 app = Flask(__name__)
-app.secret_key = "super-secret-key"
+app.secret_key = "opentutor_secret"
 
 DB = "database.db"
 
-def get_db():
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    return conn
-
+# ======================
+# DATABASE AUTO CREATE
+# ======================
 def init_db():
-    conn = get_db()
-    cur = conn.cursor()
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
 
-    cur.execute("""
+    c.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE NOT NULL,
-        password TEXT NOT NULL
+        username TEXT UNIQUE,
+        password TEXT
     )
     """)
 
-    cur.execute("""
+    c.execute("""
     CREATE TABLE IF NOT EXISTS chats (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
@@ -37,44 +35,37 @@ def init_db():
 
 init_db()
 
+# ======================
+# ROUTES
+# ======================
+
 @app.route("/")
-def index():
+def home():
     if "user_id" in session:
         return redirect("/chat")
     return redirect("/login")
 
-@app.route("/login", methods=["GET", "POST"])
+@app.route("/login", methods=["GET","POST"])
 def login():
-    conn = get_db()
-    cur = conn.cursor()
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
 
     if request.method == "POST":
         action = request.form.get("action")
+        username = request.form.get("username")
+        password = request.form.get("password")
 
         if action == "login":
-            username = request.form["username"]
-            password = request.form["password"]
-
-            cur.execute(
-                "SELECT * FROM users WHERE username=? AND password=?",
-                (username, password)
-            )
-            user = cur.fetchone()
-
+            c.execute("SELECT id FROM users WHERE username=? AND password=?", (username,password))
+            user = c.fetchone()
             if user:
-                session["user_id"] = user["id"]
-                session["username"] = user["username"]
+                session["user_id"] = user[0]
+                conn.close()
                 return redirect("/chat")
 
         if action == "signup":
-            username = request.form["username"]
-            password = request.form["password"]
-
             try:
-                cur.execute(
-                    "INSERT INTO users (username,password) VALUES (?,?)",
-                    (username, password)
-                )
+                c.execute("INSERT INTO users (username,password) VALUES (?,?)",(username,password))
                 conn.commit()
             except:
                 pass
@@ -82,23 +73,15 @@ def login():
     conn.close()
     return render_template("login.html")
 
-@app.route("/logout")
-def logout():
-    session.clear()
-    return redirect("/login")
-
 @app.route("/chat")
 def chat():
     if "user_id" not in session:
         return redirect("/login")
 
-    conn = get_db()
-    cur = conn.cursor()
-    cur.execute(
-        "SELECT role,message FROM chats WHERE user_id=?",
-        (session["user_id"],)
-    )
-    chats = cur.fetchall()
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+    c.execute("SELECT role,message FROM chats WHERE user_id=?", (session["user_id"],))
+    chats = c.fetchall()
     conn.close()
 
     return render_template("chat.html", chats=chats)
@@ -106,27 +89,27 @@ def chat():
 @app.route("/ask", methods=["POST"])
 def ask():
     if "user_id" not in session:
-        return jsonify({"answer": "Login required"})
+        return jsonify({"answer":"Login first"})
 
-    q = request.json["question"]
-    a = f"आपने पूछा: {q}\n\nमैं OpenTutor AI हूँ 🙂"
+    q = request.json.get("question")
 
-    conn = get_db()
-    cur = conn.cursor()
+    a = f"आपने पूछा: {q}\n\n(OpenTutor AI demo response)"
 
-    cur.execute(
-        "INSERT INTO chats (user_id,role,message) VALUES (?,?,?)",
-        (session["user_id"], "user", q)
-    )
-    cur.execute(
-        "INSERT INTO chats (user_id,role,message) VALUES (?,?,?)",
-        (session["user_id"], "ai", a)
-    )
+    conn = sqlite3.connect(DB)
+    c = conn.cursor()
+
+    c.execute("INSERT INTO chats (user_id,role,message) VALUES (?,?,?)",(session["user_id"],"user",q))
+    c.execute("INSERT INTO chats (user_id,role,message) VALUES (?,?,?)",(session["user_id"],"ai",a))
 
     conn.commit()
     conn.close()
 
-    return jsonify({"answer": a})
+    return jsonify({"answer":a})
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect("/login")
 
 if __name__ == "__main__":
     app.run()

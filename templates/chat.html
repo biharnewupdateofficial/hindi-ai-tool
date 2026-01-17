@@ -2,28 +2,40 @@
 <html>
 <head>
     <title>OpenTutor AI</title>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
 
-<h2>🤖 OpenTutor AI</h2>
-<a href="/logout">Logout</a>
+<div class="app">
+    <div class="header">
+        🤖 OpenTutor AI
+        <span style="float:right"><a href="/logout" style="color:#22c55e">Logout</a></span>
+    </div>
 
-<div>
-{% for c in chats %}
-<p><b>{{c.role}}:</b> {{c.message}}</p>
-{% endfor %}
+    <div class="chat-box" id="chat">
+        {% for c in chats %}
+            <div class="msg {{ c.role }}">
+                {{ c.message }}
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="input-area">
+        <textarea id="q" rows="2" placeholder="Apna sawal yahan likhiye..."></textarea>
+        <button onclick="send()">Send</button>
+    </div>
 </div>
-
-<textarea id="q"></textarea>
-<button onclick="send()">Send</button>
 
 <script>
 function send(){
+    let q = document.getElementById("q");
+    if(!q.value.trim()) return;
+
     fetch("/ask",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({question:document.getElementById("q").value})
-    }).then(()=>location.reload())
+        body:JSON.stringify({question:q.value})
+    }).then(()=>location.reload());
 }
 </script>
 

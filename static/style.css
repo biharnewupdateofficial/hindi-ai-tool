@@ -1,22 +1,23 @@
-body.dark{background:#1e1e1e;color:#fff;font-family:sans-serif}
-header{display:flex;justify-content:space-between;padding:10px}
-#chat{padding:20px}
-.user{background:#2563eb;padding:10px;margin:6px;border-radius:10px;text-align:right}
-.assistant{
-  background:#333;
-  padding:10px;
-  margin:6px;
-  border-radius:10px;
-  animation: pulse 1.2s infinite;
+body.dark{
+background:#0f172a;color:#fff;font-family:sans-serif
 }
-@keyframes pulse{
-  0%{opacity:.6}
-  50%{opacity:1}
-  100%{opacity:.6}
+.center{
+display:flex;justify-content:center;align-items:center;height:100vh
 }
-.input{
-  position:fixed;bottom:0;width:100%;
-  display:flex;gap:6px;padding:10px;background:#111
+.login-box,.profile-box{
+background:#020617;
+padding:30px;
+border-radius:14px;
+box-shadow:0 0 40px #22c55e;
+width:320px
 }
-textarea{flex:1;border-radius:8px;padding:8px}
-button{background:#22c55e;border:none;border-radius:8px;padding:8px}
+input,textarea{
+width:100%;margin:6px 0;
+padding:10px;border-radius:8px;border:none
+}
+button{
+width:100%;padding:10px;
+background:#22c55e;border:none;border-radius:8px;
+font-weight:bold
+}
+textarea{height:80px}

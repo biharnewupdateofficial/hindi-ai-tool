@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>My Profile</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+
+<body class="dark center">
+
+<div class="profile-box">
+<h2>👤 My Profile</h2>
+
+<form method="POST">
+<textarea name="bio" placeholder="About you">{{ bio }}</textarea>
+<textarea name="memory" placeholder="Things AI should remember">{{ memory }}</textarea>
+<button>Save</button>
+</form>
+
+<a href="/chat">⬅ Back to Chat</a>
+</div>
+
+</body>
+</html>

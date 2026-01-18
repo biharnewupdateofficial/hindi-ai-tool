@@ -1,25 +1,57 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Login</title>
+<title>OpenTutor AI Login</title>
+<style>
+body{
+background:#0f172a;
+font-family:Arial;
+color:white;
+display:flex;
+justify-content:center;
+align-items:center;
+height:100vh;
+}
+.box{
+background:#020617;
+padding:30px;
+border-radius:10px;
+width:320px;
+}
+input,button{
+width:100%;
+padding:10px;
+margin:6px 0;
+border-radius:6px;
+border:none;
+}
+button{
+background:#22c55e;
+color:black;
+font-weight:bold;
+cursor:pointer;
+}
+</style>
 </head>
 <body>
 
-<h2>🔐 OpenTutor AI Login</h2>
+<div class="box">
+<h2>🔐 OpenTutor AI</h2>
 
-<form method="POST">
+<form method="post">
 <input name="username" placeholder="Username">
-<input name="password" placeholder="Password">
-<button>Login</button>
+<input type="password" name="password" placeholder="Password">
+<button name="login">Login</button>
 </form>
 
 <hr>
 
-<form action="/signup" method="POST">
-<input name="username" placeholder="New Username">
-<input name="password" placeholder="New Password">
-<button>Signup</button>
+<form method="post">
+<input name="new_username" placeholder="New Username">
+<input type="password" name="new_password" placeholder="New Password">
+<button name="signup">Signup</button>
 </form>
+</div>
 
 </body>
 </html>

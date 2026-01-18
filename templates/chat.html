@@ -2,68 +2,35 @@
 <html>
 <head>
 <title>OpenTutor AI</title>
-<link rel="stylesheet" href="/static/style.css">
+<style>
+body{margin:0;background:#0f172a;color:white;font-family:Arial;}
+.top{padding:15px;background:#020617;}
+.chat{padding:20px;}
+.user{background:#2563eb;padding:10px;border-radius:8px;margin:8px 0;}
+.ai{background:#1e293b;padding:10px;border-radius:8px;margin:8px 0;}
+form{display:flex;position:fixed;bottom:0;width:100%;background:#020617;padding:10px;}
+input{flex:1;padding:10px;border-radius:6px;border:none;}
+button{margin-left:8px;background:#22c55e;border:none;padding:10px;border-radius:6px;}
+a{color:#38bdf8;}
+</style>
 </head>
+<body>
 
-<body class="dark">
+<div class="top">
+🤖 OpenTutor AI — {{username}} |
+<a href="/logout">Logout</a>
+</div>
 
-<header>
-  <h2>🤖 OpenTutor AI</h2>
-  <div class="modes">
-    <button onclick="toggleVoice()">🔊 Voice</button>
-  </div>
-</header>
-
-<div id="chat">
-{% for m in messages %}
-  <div class="{{ m.role }}">{{ m.text }}</div>
-  {% if m.role == 'assistant' %}
-  <script>
-    speak(`{{ m.text | safe }}`);
-  </script>
-  {% endif %}
+<div class="chat">
+{% for r,m in chats %}
+<div class="{{r}}">{{m}}</div>
 {% endfor %}
 </div>
 
-<div class="input">
-  <textarea id="q" placeholder="Type or Speak..."></textarea>
-  <button onclick="startVoice()">🎙</button>
-  <button onclick="send()">Send</button>
-</div>
-
-<script>
-let voiceOn = true;
-
-function toggleVoice(){
-  voiceOn = !voiceOn;
-  alert("Voice " + (voiceOn ? "ON" : "OFF"));
-}
-
-function speak(text){
-  if(!voiceOn) return;
-  let msg = new SpeechSynthesisUtterance(text);
-  msg.lang="hi-IN";
-  speechSynthesis.speak(msg);
-}
-
-function send(){
-  let q=document.getElementById("q").value;
-  if(!q) return;
-  fetch("/ask",{method:"POST",
-    headers:{"Content-Type":"application/json"},
-    body:JSON.stringify({question:q})
-  }).then(()=>location.reload());
-}
-
-function startVoice(){
-  let rec = new webkitSpeechRecognition();
-  rec.lang="hi-IN";
-  rec.onresult=e=>{
-    document.getElementById("q").value=e.results[0][0].transcript;
-  }
-  rec.start();
-}
-</script>
+<form method="post">
+<input name="message" placeholder="Type your message...">
+<button>Send</button>
+</form>
 
 </body>
 </html>

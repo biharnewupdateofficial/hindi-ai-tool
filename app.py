@@ -1,23 +1,23 @@
-from flask import Flask, render_template, request, redirect, session, url_for
+from flask import Flask, render_template, request, redirect, session
 import sqlite3
 from werkzeug.security import generate_password_hash, check_password_hash
+import os
 
 app = Flask(__name__)
-app.secret_key = "opentutor-secret-key"
+app.secret_key = "opentutor-super-secret"
+
+DB_PATH = "database.db"
 
 # ---------- DATABASE ----------
-def get_db():
-    return sqlite3.connect("database.db")
-
 def init_db():
-    db = get_db()
-    cur = db.cursor()
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
 
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        username TEXT UNIQUE,
-        password TEXT
+        username TEXT UNIQUE NOT NULL,
+        password TEXT NOT NULL
     )
     """)
 
@@ -30,72 +30,81 @@ def init_db():
     )
     """)
 
-    db.commit()
-    db.close()
+    conn.commit()
+    conn.close()
 
 init_db()
 
 # ---------- ROUTES ----------
 @app.route("/")
-def home():
+def index():
     if "user_id" in session:
         return redirect("/chat")
     return redirect("/login")
 
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    db = get_db()
-    cur = db.cursor()
+@app.route("/login", methods=["GET"])
+def login_page():
+    return render_template("login.html", error=None)
 
-    if request.method == "POST":
-        if "login" in request.form:
-            username = request.form["username"]
-            password = request.form["password"]
+@app.route("/login", methods=["POST"])
+def login_post():
+    username = request.form.get("username")
+    password = request.form.get("password")
 
-            cur.execute("SELECT id, password FROM users WHERE username=?", (username,))
-            user = cur.fetchone()
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute("SELECT id, password FROM users WHERE username=?", (username,))
+    user = cur.fetchone()
+    conn.close()
 
-            if user and check_password_hash(user[1], password):
-                session["user_id"] = user[0]
-                session["username"] = username
-                return redirect("/chat")
+    if user and check_password_hash(user[1], password):
+        session["user_id"] = user[0]
+        session["username"] = username
+        return redirect("/chat")
 
-        if "signup" in request.form:
-            username = request.form["new_username"]
-            password = generate_password_hash(request.form["new_password"])
+    return render_template("login.html", error="❌ Invalid username or password")
 
-            try:
-                cur.execute("INSERT INTO users (username, password) VALUES (?,?)", (username, password))
-                db.commit()
-            except:
-                pass
+@app.route("/signup", methods=["POST"])
+def signup_post():
+    username = request.form.get("new_username")
+    password = request.form.get("new_password")
 
-    return render_template("login.html")
+    if not username or not password:
+        return render_template("login.html", error="❌ All fields required")
+
+    hashed = generate_password_hash(password)
+
+    try:
+        conn = sqlite3.connect(DB_PATH)
+        cur = conn.cursor()
+        cur.execute("INSERT INTO users (username,password) VALUES (?,?)", (username, hashed))
+        conn.commit()
+        conn.close()
+        return render_template("login.html", error="✅ Signup successful, now login")
+    except:
+        return render_template("login.html", error="❌ Username already exists")
 
 @app.route("/chat", methods=["GET", "POST"])
 def chat():
     if "user_id" not in session:
         return redirect("/login")
 
-    db = get_db()
-    cur = db.cursor()
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
 
     if request.method == "POST":
-        msg = request.form["message"]
-
-        cur.execute("INSERT INTO chats (user_id, role, message) VALUES (?,?,?)",
-                    (session["user_id"], "user", msg))
-
-        # TEMP AI RESPONSE (stable)
-        ai_reply = "🤖 Main OpenTutor AI hoon. Aapka sawal mila!"
-        cur.execute("INSERT INTO chats (user_id, role, message) VALUES (?,?,?)",
-                    (session["user_id"], "ai", ai_reply))
-
-        db.commit()
+        msg = request.form.get("message")
+        if msg:
+            cur.execute("INSERT INTO chats VALUES (NULL,?,?,?)",
+                        (session["user_id"], "user", msg))
+            cur.execute("INSERT INTO chats VALUES (NULL,?,?,?)",
+                        (session["user_id"], "ai", "🤖 Main OpenTutor AI hoon."))
+            conn.commit()
 
     cur.execute("SELECT role, message FROM chats WHERE user_id=?",
                 (session["user_id"],))
     chats = cur.fetchall()
+    conn.close()
 
     return render_template("chat.html", chats=chats, username=session["username"])
 
@@ -103,6 +112,3 @@ def chat():
 def logout():
     session.clear()
     return redirect("/login")
-
-if __name__ == "__main__":
-    app.run(debug=True)

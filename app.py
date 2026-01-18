@@ -3,20 +3,19 @@ import sqlite3
 from openai import OpenAI
 
 app = Flask(__name__)
-app.secret_key = "supersecretkey"
+app.secret_key = "opentutor-secret"
 
 # ---------- OpenAI ----------
 client = OpenAI(api_key="YOUR_OPENAI_API_KEY")
 
 # ---------- Database ----------
-def connect():
+def db():
     return sqlite3.connect("database.db", check_same_thread=False)
 
 def init_db():
-    con = connect()
+    con = db()
     cur = con.cursor()
 
-    # users table
     cur.execute("""
     CREATE TABLE IF NOT EXISTS users(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -25,7 +24,6 @@ def init_db():
     )
     """)
 
-    # chat history table
     cur.execute("""
     CREATE TABLE IF NOT EXISTS history(
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,14 +33,22 @@ def init_db():
     )
     """)
 
+    cur.execute("""
+    CREATE TABLE IF NOT EXISTS memory(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user TEXT,
+        note TEXT
+    )
+    """)
+
     con.commit()
     con.close()
 
 init_db()
 
-# ---------- Routes ----------
+# ---------- ROUTES ----------
 @app.route("/")
-def home():
+def root():
     if "user" in session:
         return redirect("/chat")
     return redirect("/login")
@@ -53,7 +59,7 @@ def login():
         u = request.form["username"]
         p = request.form["password"]
 
-        con = connect()
+        con = db()
         cur = con.cursor()
         cur.execute("SELECT * FROM users WHERE username=? AND password=?", (u,p))
         user = cur.fetchone()
@@ -70,7 +76,7 @@ def signup():
     u = request.form["username"]
     p = request.form["password"]
 
-    con = connect()
+    con = db()
     cur = con.cursor()
     try:
         cur.execute("INSERT INTO users(username,password) VALUES(?,?)",(u,p))
@@ -78,7 +84,6 @@ def signup():
     except:
         pass
     con.close()
-
     return redirect("/login")
 
 @app.route("/logout")
@@ -91,13 +96,13 @@ def chat():
     if "user" not in session:
         return redirect("/login")
 
-    con = connect()
+    con = db()
     cur = con.cursor()
     cur.execute("SELECT question,answer FROM history WHERE user=?", (session["user"],))
     chats = cur.fetchall()
     con.close()
 
-    return render_template("index.html", chats=chats)
+    return render_template("index.html", chats=chats, user=session["user"])
 
 @app.route("/ask", methods=["POST"])
 def ask():
@@ -113,8 +118,7 @@ def ask():
 
     ans = res.choices[0].message.content
 
-    # SAVE HISTORY
-    con = connect()
+    con = db()
     cur = con.cursor()
     cur.execute(
         "INSERT INTO history(user,question,answer) VALUES(?,?,?)",
@@ -124,6 +128,27 @@ def ask():
     con.close()
 
     return jsonify({"answer": ans})
+
+@app.route("/profile", methods=["GET","POST"])
+def profile():
+    if "user" not in session:
+        return redirect("/login")
+
+    if request.method == "POST":
+        note = request.form["note"]
+        con = db()
+        cur = con.cursor()
+        cur.execute("INSERT INTO memory(user,note) VALUES(?,?)",(session["user"],note))
+        con.commit()
+        con.close()
+
+    con = db()
+    cur = con.cursor()
+    cur.execute("SELECT note FROM memory WHERE user=?", (session["user"],))
+    notes = cur.fetchall()
+    con.close()
+
+    return render_template("profile.html", notes=notes)
 
 if __name__ == "__main__":
     app.run(debug=True)

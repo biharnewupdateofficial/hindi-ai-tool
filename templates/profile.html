@@ -1,23 +1,23 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>My Profile</title>
-<link rel="stylesheet" href="/static/style.css">
+<title>Profile</title>
 </head>
+<body style="background:#020617;color:white">
 
-<body class="dark center">
-
-<div class="profile-box">
-<h2>👤 My Profile</h2>
+<h2>👤 Your Memory</h2>
+<a href="/chat">Back</a>
 
 <form method="POST">
-<textarea name="bio" placeholder="About you">{{ bio }}</textarea>
-<textarea name="memory" placeholder="Things AI should remember">{{ memory }}</textarea>
-<button>Save</button>
+<input name="note" placeholder="Save memory">
+<button>Add</button>
 </form>
 
-<a href="/chat">⬅ Back to Chat</a>
-</div>
+<ul>
+{% for n in notes %}
+<li>{{n[0]}}</li>
+{% endfor %}
+</ul>
 
 </body>
 </html>

@@ -3,36 +3,32 @@
 <head>
 <title>OpenTutor AI</title>
 <style>
-body{background:#111;color:#fff;font-family:Arial}
-.user{background:#2563eb;padding:10px;border-radius:10px;margin:10px;text-align:right}
-.ai{background:#333;padding:10px;border-radius:10px;margin:10px}
+body{background:#0f172a;color:white;font-family:Arial}
+.user{background:#2563eb;margin:10px;padding:10px;border-radius:12px;text-align:right}
+.ai{background:#1e293b;margin:10px;padding:10px;border-radius:12px}
 </style>
 </head>
 <body>
 
-<h2>🤖 OpenTutor AI</h2>
+<h2>🤖 OpenTutor AI — {{user}}</h2>
+<a href="/profile">Profile</a> |
 <a href="/logout">Logout</a>
 
-<div id="chat-box">
+<div id="chat">
 {% for q,a in chats %}
 <div class="user">{{q}}</div>
 <div class="ai">{{a}}</div>
 {% endfor %}
 </div>
 
-<input id="question" placeholder="Apna sawal likho" style="width:80%">
+<input id="q" placeholder="Type..." style="width:75%">
 <button onclick="send()">Send</button>
 
 <script>
 function send(){
-    let q = document.getElementById("question").value;
-    fetch("/ask",{
-        method:"POST",
-        headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({question:q})
-    })
-    .then(r=>r.json())
-    .then(d=>location.reload());
+ let q=document.getElementById("q").value;
+ fetch("/ask",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({question:q})})
+ .then(()=>location.reload());
 }
 </script>
 
